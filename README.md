@@ -14,13 +14,33 @@ page talks to the serial port and nothing else.
 
 | Tab | Contents |
 |---|---|
-| FLIGHT | 3D orientation · attitude/altimeter/VSI gauges · satellite map, with a data strip beneath |
+| FLIGHT | 3D orientation · attitude/altimeter/VSI gauges · a 2×2 quad of map, signal, GPS and startup calibration · data strip beneath |
 | KALMAN | altitude, vertical velocity, and world-up acceleration vs time |
 | ATTITUDE | tilt / roll / azimuth, body angular rates, quaternion, raw IMU |
 | EVENTS | event records with decoded values, sticky fault bits, loop health |
 
 The serial console is a scrollable strip along the bottom, present on every
 tab, collapsible.
+
+## The quad
+
+The right half is four panels of equal size:
+
+- **Map** — satellite imagery (see below).
+- **Signal** — satellites used in the solution, a fix-quality ladder, and a
+  120-second history of satellite count. That history is the honest signal
+  indicator available: the wire format carries only `numSV` and `fixType`, so
+  it shows how many satellites the receiver is *using* and when it drops them.
+  True per-satellite C/N₀ would require the firmware to also emit UBX NAV-SAT
+  (`0x01 0x35`); the panel says so rather than inventing bars.
+- **GPS** — fix type, position, range and bearing from the pad, the captured
+  pad reference, track point count, and a link out to real maps.
+- **Startup calibration** — the values computed once at boot and never shown
+  again in the telemetry rows: the three gyro biases (parsed from the
+  firmware's own setup print), whether the stationarity check passed and after
+  how many attempts, the pad pressure reference with its ISA-equivalent
+  altitude as a sanity check, the GPS pad MSL reference, and the reset cause
+  from `EV_BOOT` — which is how you catch a mid-flight watchdog or brownout.
 
 ## Map
 
