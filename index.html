@@ -66,7 +66,29 @@ label.file{border:1px solid var(--edge2);border-radius:2px;padding:4px 10px;
 label.file:hover{color:var(--fg);border-color:#3a3a3a}
 
 /* -------------------------------------------------------------- gauges */
+#view3d,#quad{flex:1 1 0;min-width:0;min-height:0}
 #gcol{flex:0 0 196px;display:flex;flex-direction:column}
+
+/* right region: map is one quarter, three data panels fill the rest */
+#quad{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
+.q{position:relative;min-width:0;min-height:0;overflow:hidden;
+  border-left:1px solid var(--edge);border-bottom:1px solid var(--edge)}
+.q:nth-child(3),.q:nth-child(4){border-bottom:0}
+.qh{position:absolute;top:8px;left:12px;font-size:8.5px;letter-spacing:.15em;
+  color:var(--fg3);z-index:2}
+.qbody{position:absolute;inset:28px 12px 10px;overflow-y:auto}
+.qtop{position:absolute;top:28px;left:12px;right:12px}
+.big{font:400 32px/1 var(--mono);font-variant-numeric:tabular-nums}
+.sub{font-size:10px;color:var(--fg3);margin-top:4px}
+.qdl{display:grid;grid-template-columns:1fr auto;gap:5px 8px;font-size:11.5px}
+.qdl dt{color:var(--fg2)}
+.qdl dd{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.ladder{display:flex;gap:3px;margin:11px 0 7px}
+.ladder i{flex:1 1 0;height:3px;background:#1e1e1e;font-style:normal;display:block}
+.ladder i.on{background:var(--live)}
+#sigwrap{position:absolute;left:12px;right:12px;bottom:26px;height:74px}
+#sigwrap canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#sigNote{position:absolute;left:12px;bottom:8px;margin:0}
 .gauge{flex:1 1 0;position:relative;border-bottom:1px solid var(--edge);overflow:hidden}
 .gauge:last-child{border-bottom:0}
 .gauge canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
@@ -160,7 +182,7 @@ a{color:var(--fg2);text-decoration:none}a:hover{color:var(--fg)}
   <section class="tab sel" data-t="flight">
     <div class="row grow">
 
-      <div class="view grow">
+      <div class="view" id="view3d">
         <canvas id="gl"></canvas>
         <div class="ovl tl"><span class="tag" id="srcTag">awaiting telemetry</span></div>
         <div class="ovl tr">
@@ -184,15 +206,62 @@ a{color:var(--fg2);text-decoration:none}a:hover{color:var(--fg)}
           <canvas id="gVs"></canvas><div class="rd" id="rdVs">—</div></figure>
       </div>
 
-      <div class="view grow vsep">
-        <canvas id="map"></canvas>
-        <div class="ovl tl"><span class="tag over" id="mapTag">no fix</span></div>
-        <div class="ovl tr">
-          <button id="bZo">−</button><button id="bZi">+</button>
-          <button id="bFollow" class="on">follow</button>
-          <button id="bTrack">clear</button>
+      <div id="quad">
+
+        <div class="q view">
+          <canvas id="map"></canvas>
+          <div class="ovl tl"><span class="tag over" id="mapTag">no fix</span></div>
+          <div class="ovl tr">
+            <button id="bZo">−</button><button id="bZi">+</button>
+            <button id="bFollow" class="on">follow</button>
+          </div>
+          <div class="ovl br"><span class="tag over">© Esri, Maxar</span></div>
         </div>
-        <div class="ovl br"><span class="tag over" id="attrib">Imagery © Esri, Maxar, Earthstar Geographics</span></div>
+
+        <div class="q">
+          <div class="qh">SIGNAL</div>
+          <div class="qtop">
+            <div class="big" id="vSat">—</div>
+            <p class="sub">satellites used in solution</p>
+            <div class="ladder"><i id="lad0"></i><i id="lad1"></i><i id="lad2"></i></div>
+            <p class="sub" id="fixTxt">no fix</p>
+          </div>
+          <div id="sigwrap"><canvas id="sig"></canvas></div>
+          <p class="sub" id="sigNote">count · last 120 s · per-satellite C/N₀ needs UBX NAV-SAT</p>
+        </div>
+
+        <div class="q">
+          <div class="qh">GPS</div>
+          <div class="qbody">
+            <dl class="qdl">
+              <dt>fix type</dt><dd id="vFix">—</dd>
+              <dt>satellites</dt><dd id="vSat2">—</dd>
+              <dt>latitude</dt><dd id="vLat">—</dd>
+              <dt>longitude</dt><dd id="vLon">—</dd>
+              <dt>range from pad</dt><dd><span id="vRange">—</span> m</dd>
+              <dt>bearing</dt><dd><span id="vBrg">—</span>°</dd>
+              <dt>pad latitude</dt><dd id="vPLat">—</dd>
+              <dt>pad longitude</dt><dd id="vPLon">—</dd>
+              <dt>track points</dt><dd id="vPts">0</dd>
+            </dl>
+            <p style="margin-top:11px"><a id="mapLink" target="_blank" rel="noopener"
+               style="font-size:11px">open in maps →</a></p>
+          </div>
+        </div>
+
+        <div class="q">
+          <div class="qh">STARTUP CALIBRATION</div>
+          <div class="qbody"><dl class="qdl">
+            <dt>gyro bias X</dt><dd><span id="vBx">—</span> °/s</dd>
+            <dt>gyro bias Y</dt><dd><span id="vBy">—</span> °/s</dd>
+            <dt>gyro bias Z</dt><dd><span id="vBz">—</span> °/s</dd>
+            <dt>stationarity</dt><dd id="vCal">—</dd>
+            <dt>pad pressure</dt><dd><span id="vPadP">—</span> hPa</dd>
+            <dt>pad alt · ISA</dt><dd><span id="vPadA">—</span> m</dd>
+            <dt>GPS pad MSL</dt><dd><span id="vGpsPad">—</span> m</dd>
+            <dt>reset cause</dt><dd id="vReset">—</dd>
+          </dl></div>
+        </div>
       </div>
     </div>
 
@@ -201,12 +270,10 @@ a{color:var(--fg2);text-decoration:none}a:hover{color:var(--fg)}
       <div><span>ROLL deg</span><b id="vRoll">—</b></div>
       <div><span>ALT AGL m</span><b id="vAlt">—</b></div>
       <div><span>V SPEED m/s</span><b id="vVv">—</b></div>
+      <div><span>AZIMUTH deg</span><b id="vAzi">—</b></div>
       <div><span>APOGEE m</span><b id="vApo">—</b></div>
-      <div><span>RANGE m</span><b id="vRange">—</b></div>
-      <div><span>BEARING deg</span><b id="vBrg">—</b></div>
-      <div><span>FIX / SATS</span><b id="vFix">—</b></div>
-      <div><span>LATITUDE</span><b id="vLat">—</b></div>
-      <div><span>LONGITUDE</span><b id="vLon">—</b></div>
+      <div><span>MAX ASCENT m/s</span><b id="vMaxU">—</b></div>
+      <div><span>PEAK ACCEL m/s²</span><b id="vMaxA">—</b></div>
     </div>
   </section>
 
@@ -328,11 +395,11 @@ const D2R=Math.PI/180;
 /* ═════════════════════════════════════════════════════════════════ state */
 const S={tilt:0,roll:0,azi:0,q:[1,0,0,0],alt:null,vv:null,aup:null,
   accel:null,gyro:null,temp:null,mag:null,lat:0,lon:0,fix:0,nsat:0,
-  loopUs:0,ovr:0,tmo:0,faults:0,src:'none',
+  loopUs:0,ovr:0,tmo:0,faults:0,src:'none',bias:null,padPa:null,
   apogee:-Infinity,maxUp:-Infinity,maxDn:Infinity,maxA:0,
   rows:0,rowsMark:0,ovrMark:0,tMark:performance.now(),rate:0,ovrRate:0,
   t0:performance.now()};
-const H={t:[],alt:[],vv:[],aup:[],tilt:[],roll:[],azi:[],gp:[],gq:[],gr:[]};
+const H={t:[],alt:[],vv:[],aup:[],tilt:[],roll:[],azi:[],gp:[],gq:[],gr:[],sat:[]};
 const HMAX=40000;
 let track=[],pad=null,csv=[];
 const events=new Map();
@@ -344,7 +411,7 @@ function hist(t){
   H.t.push(t);H.alt.push(S.alt);H.vv.push(S.vv);H.aup.push(S.aup);
   H.tilt.push(S.tilt);H.roll.push(S.roll);H.azi.push(S.azi);
   H.gp.push(S.gyro?S.gyro[0]:null);H.gq.push(S.gyro?S.gyro[1]:null);
-  H.gr.push(S.gyro?S.gyro[2]:null);
+  H.gr.push(S.gyro?S.gyro[2]:null);H.sat.push(S.fix>=2?S.nsat:0);
   if(H.t.length>HMAX)for(const k in H)H[k].splice(0,H[k].length-HMAX);
 }
 
@@ -764,6 +831,39 @@ function chart(cv,series,opt){
     x.stroke()}
 }
 
+/* ─────────────────────────────────────────── satellite count history
+   The wire format carries only numSV and fixType, so this is the honest
+   signal-quality indicator available: how many satellites the receiver is
+   actually using, and when it drops them. Per-satellite C/N0 would need the
+   firmware to also emit UBX NAV-SAT (0x01 0x35). */
+function drawSignal(){
+  const f=fit($('#sig'));if(!f)return;const{x,w,h}=f;
+  const n=H.t.length;
+  x.strokeStyle='#161616';x.lineWidth=1;
+  x.font='8.5px ui-monospace,monospace';x.fillStyle='#3f3f3f';
+  x.textAlign='left';x.textBaseline='middle';
+  let mx=8;for(let i=0;i<n;i++)if(H.sat[i]>mx)mx=H.sat[i];
+  mx=Math.ceil(mx/4)*4;
+  for(let g=4;g<=mx;g+=4){
+    const y=Math.round(h-g/mx*h)+.5;
+    x.beginPath();x.moveTo(0,y);x.lineTo(w,y);x.stroke();
+    x.fillText(g,2,y-5);
+  }
+  if(!n)return;
+  const now=H.t[n-1],t0=Math.max(H.t[0],now-120),span=Math.max(now-t0,1);
+  const step=Math.max(1,Math.floor(n/(w*2)));
+  x.beginPath();let started=false;
+  for(let i=0;i<n;i+=step){
+    if(H.t[i]<t0)continue;
+    const px=(H.t[i]-t0)/span*w,py=h-(H.sat[i]||0)/mx*h;
+    if(!started){x.moveTo(px,h);x.lineTo(px,py);started=true}else x.lineTo(px,py);
+  }
+  if(!started)return;
+  x.lineTo(w,h);x.closePath();
+  x.fillStyle='rgba(90,200,250,.16)';x.fill();
+  x.strokeStyle='#5ac8fa';x.lineWidth=1.2;x.stroke();
+}
+
 /* ══════════════════════════════════════════════════════════════ parsing */
 const RE_EV=/^#\s+(\d+)\s+([IWE])\s+(\S+)\s+v=(-?\d+)\s+n=(\d+)\s+first=(\d+)/;
 const RE_ST=/^#\s+(\d+)\s+I\s+STATS\s+(.+)$/;
@@ -807,6 +907,13 @@ function onLine(raw){
       events.set(name,{sev,name,val:+val,n:+n,first:+first,last:+ms});renderEvents()}
     return;
   }
+  /* Setup-time prints, not telemetry rows — these are the only place the
+     gyro biases and the pad pressure reference appear on the wire. */
+  let mb=s.match(/gyro bias body dps:\s*(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)/i);
+  if(mb){S.bias=[+mb[1],+mb[2],+mb[3]];return}
+  mb=s.match(/Pad P0\s*=\s*([\d.]+)\s*Pa/i);
+  if(mb){S.padPa=+mb[1];return}
+
   const f=s.split(/\s+/),v=f.map(Number);
   if(v.some(Number.isNaN))return;
   const t=(performance.now()-S.t0)/1000;
@@ -850,10 +957,43 @@ function readouts(){
 
   $('#vTilt').textContent=nf(S.tilt);$('#vRoll').textContent=nf(S.roll);
   $('#vAlt').textContent=nf(S.alt,1);$('#vVv').textContent=nf(S.vv,1);
+  $('#vAzi').textContent=nf(S.azi,0);
   $('#vApo').textContent=isFinite(S.apogee)?S.apogee.toFixed(1):'—';
-  $('#vFix').textContent=S.fix?`${S.fix} / ${S.nsat}`:'—';
+  $('#vMaxU').textContent=isFinite(S.maxUp)?S.maxUp.toFixed(1):'—';
+  $('#vMaxA').textContent=S.maxA?S.maxA.toFixed(1):'—';
+
+  /* ---- SIGNAL ---- */
+  const FIXN=['no fix','dead reckoning','2D fix','3D fix','GNSS + dead reck.','time only'];
+  $('#vSat').textContent=S.fix>=2?S.nsat:'—';
+  $('#vSat2').textContent=S.nsat||'—';
+  $('#fixTxt').textContent=FIXN[S.fix]||('fix type '+S.fix);
+  for(let i=0;i<3;i++)$('#lad'+i).className=(S.fix>=i+1)?'on':'';
+
+  /* ---- GPS ---- */
+  $('#vFix').textContent=FIXN[S.fix]||S.fix;
   $('#vLat').textContent=S.lat?S.lat.toFixed(6):'—';
   $('#vLon').textContent=S.lon?S.lon.toFixed(6):'—';
+  $('#vPLat').textContent=pad?pad.lat.toFixed(6):'—';
+  $('#vPLon').textContent=pad?pad.lon.toFixed(6):'—';
+  $('#vPts').textContent=track.length;
+  $('#mapLink').href=S.lat
+    ?`https://www.openstreetmap.org/?mlat=${S.lat}&mlon=${S.lon}#map=17/${S.lat}/${S.lon}`:'#';
+
+  /* ---- STARTUP CALIBRATION ---- */
+  $('#vBx').textContent=S.bias?S.bias[0].toFixed(4):'—';
+  $('#vBy').textContent=S.bias?S.bias[1].toFixed(4):'—';
+  $('#vBz').textContent=S.bias?S.bias[2].toFixed(4):'—';
+  const calOk=events.get('GYRO_CAL_OK'),calBad=events.get('GYRO_CAL_UNSTABLE');
+  $('#vCal').textContent=calBad?'NEVER STILL':
+    (calOk?`ok · ${calOk.val} attempt${calOk.val>1?'s':''}`:'—');
+  const padPa=S.padPa!=null?S.padPa:(events.get('BARO_PAD_REF')||{}).val;
+  $('#vPadP').textContent=padPa?(padPa/100).toFixed(2):'—';
+  /* ISA inverse — a sanity check on the reference, not the flight altitude */
+  $('#vPadA').textContent=padPa?(44330*(1-Math.pow(padPa/101325,0.1903))).toFixed(0):'—';
+  const gpsPad=events.get('GPS_PAD_REF');
+  $('#vGpsPad').textContent=gpsPad?gpsPad.val:'—';
+  const boot=events.get('BOOT');
+  $('#vReset').textContent=boot?NOTE.BOOT(boot.val).replace('reset: ',''):'—';
 
   if(pad&&S.lat){
     const n=(S.lat-pad.lat)*111320,
@@ -862,10 +1002,10 @@ function readouts(){
     const rng=Math.hypot(n,e);
     $('#vRange').textContent=rng.toFixed(0);
     $('#vBrg').textContent=rng<1?'—':b.toFixed(0);   // undefined at the pad
-    $('#mapTag').textContent=`${S.nsat} sats · ${rng.toFixed(0)} m from pad · z${mapZ}`;
+    $('#mapTag').textContent=`${rng.toFixed(0)} m · z${mapZ}`;
   }else{
     $('#vRange').textContent='—';$('#vBrg').textContent='—';
-    $('#mapTag').textContent=(S.fix>=3?'fix, no pad reference':'no 3D fix')+` · z${mapZ}`;
+    $('#mapTag').textContent=(S.fix>=3?'no pad ref':'no fix')+` · z${mapZ}`;
   }
   $('#srcTag').textContent={none:'awaiting telemetry',
     flight:'orientation · filter quaternion',
@@ -911,7 +1051,7 @@ function frame(){
   readouts();
   if(tab==='flight'){
     if(follow&&S.lat)mapCentre=null;
-    drawGL();drawAI();drawAlt();drawVs();drawMap();
+    drawGL();drawAI();drawAlt();drawVs();drawMap();drawSignal();
   }else if(tab==='kalman'){
     chart($('#cAlt'),[{d:H.alt,c:'#5ac8fa'}],{min:5});
     chart($('#cVv'),[{d:H.vv,c:'#5ac8fa'}],{min:2});
@@ -1002,12 +1142,20 @@ $('#bConnect').onclick=()=>port?disconnect():connect();
 $('#bDump').onclick=()=>send('l');
 $('#bHdr').onclick=()=>send('h');
 $('#bDemo').onclick=e=>{demo=!demo;e.target.classList.toggle('on',demo);
-  if(demo){resetDemo();con('— demo mode: synthetic flight —','s')}
+  if(demo){resetDemo();con('— demo mode: synthetic flight —','s');
+    /* Fed through the real parser, not injected into state — this is exactly
+       what the firmware prints during setup. */
+    onLine('# 1 I BOOT v=1 n=1 first=1');
+    onLine('gyro bias body dps: 0.0412 -0.0087 0.0231');
+    onLine('# 2101 I GYRO_CAL_OK v=2 n=1 first=2101');
+    onLine('Altitude KF armed. Pad P0 = 99197.0 Pa');
+    onLine('# 3274 I BARO_PAD_REF v=99197 n=1 first=3274');
+    onLine('# 5100 I GPS_PAD_REF v=228 n=1 first=5100');
+  }
   else{S.src=port?'flight':'none';con('— demo off —','s')}};
 $('#bClr').onclick=()=>{$('#cout').innerHTML='';csv=[]};
 $('#bMin').onclick=e=>{const c=$('#con');c.classList.toggle('min');
   e.target.textContent=c.classList.contains('min')?'show':'hide'};
-$('#bTrack').onclick=()=>{track=[];pad=null};
 $('#bView').onclick=()=>cam={yaw:-.9,pitch:.3,dist:4.8};
 $('#bModel').onclick=()=>{setMesh(fitMesh(rocketMesh()),false);con('— model reset —','s')};
 $('#bZi').onclick=()=>mapZ=Math.min(19,mapZ+1);
