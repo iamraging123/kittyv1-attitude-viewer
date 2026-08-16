@@ -54,8 +54,10 @@ nav button.sel{color:var(--fg);border-bottom-color:var(--accent);background:tran
 
 /* ---------------------------------------------------------------- layout */
 main{flex:1 1 auto;min-height:0;position:relative}
-.tab{position:absolute;inset:0;display:none;min-height:0}
-.tab.sel{display:flex}
+/* Element-qualified so these beat the bare .col/.row display rules below —
+   equal specificity would let the later .col{display:flex} unhide every tab. */
+section.tab{position:absolute;inset:0;display:none;min-height:0}
+section.tab.sel{display:flex;flex-direction:column}
 .col{display:flex;flex-direction:column;min-width:0;min-height:0}
 .row{display:flex;min-width:0;min-height:0}
 .grow{flex:1 1 auto;min-width:0;min-height:0}
