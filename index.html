@@ -642,7 +642,9 @@ function tickDemo(){
   S.aup = 3*Math.sin(demoT*0.9);
   S.accel = qRot([S.q[0],-S.q[1],-S.q[2],-S.q[3]], [0,0,1]);   // gravity in body
   S.gyro = [70, 12*Math.cos(demoT), 8*Math.sin(demoT*1.3)];
-  S.temp = 27.4; S.source='demo'; S.rows++;
+  S.temp = 27.4; S.source='demo';
+  /* Deliberately does NOT touch S.rows: loop health must only ever reflect
+     real serial traffic, never the browser's frame rate. */
 }
 
 /* ------------------------------------------------------------- wiring */
