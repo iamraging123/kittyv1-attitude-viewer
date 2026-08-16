@@ -57,6 +57,9 @@ section.tab.sel{display:flex}
 .br{bottom:9px;right:11px}
 .tag{font:10.5px var(--mono);color:var(--fg3);letter-spacing:.02em}
 .tag.w{color:var(--warn)}
+/* over satellite imagery a bare dim grey is unreadable */
+.view .tag.over{color:rgba(255,255,255,.62);background:rgba(0,0,0,.55);
+  padding:2px 6px;border-radius:2px}
 .ovl button,.ovl select,.ovl label{background:rgba(0,0,0,.72)}
 label.file{border:1px solid var(--edge2);border-radius:2px;padding:4px 10px;
   font-size:11px;color:var(--fg2);cursor:pointer}
@@ -183,13 +186,13 @@ a{color:var(--fg2);text-decoration:none}a:hover{color:var(--fg)}
 
       <div class="view grow vsep">
         <canvas id="map"></canvas>
-        <div class="ovl tl"><span class="tag" id="mapTag">no fix</span></div>
+        <div class="ovl tl"><span class="tag over" id="mapTag">no fix</span></div>
         <div class="ovl tr">
           <button id="bZo">−</button><button id="bZi">+</button>
           <button id="bFollow" class="on">follow</button>
           <button id="bTrack">clear</button>
         </div>
-        <div class="ovl br"><span class="tag" id="attrib">Imagery © Esri, Maxar, Earthstar Geographics</span></div>
+        <div class="ovl br"><span class="tag over" id="attrib">Imagery © Esri, Maxar, Earthstar Geographics</span></div>
       </div>
     </div>
 
@@ -550,8 +553,8 @@ function drawAI(){
   const pitch=Math.max(-90,Math.min(90,90-S.tilt)),bank=S.roll,PPD=R/46;
   x.save();x.beginPath();x.arc(cx,cy,R,0,7);x.clip();
   x.translate(cx,cy);x.rotate(-bank*D2R);x.translate(0,pitch*PPD);
-  x.fillStyle='#101820';x.fillRect(-2*R,-4*R,4*R,4*R);
-  x.fillStyle='#1c1712';x.fillRect(-2*R,0,4*R,4*R);
+  x.fillStyle='#12202c';x.fillRect(-2*R,-4*R,4*R,4*R);
+  x.fillStyle='#2a2118';x.fillRect(-2*R,0,4*R,4*R);
   x.strokeStyle='#9aa0a6';x.lineWidth=1;
   x.beginPath();x.moveTo(-2*R,0);x.lineTo(2*R,0);x.stroke();
   x.strokeStyle='#454b51';x.font='8px ui-monospace,monospace';
@@ -856,9 +859,10 @@ function readouts(){
     const n=(S.lat-pad.lat)*111320,
           e=(S.lon-pad.lon)*111320*Math.cos(pad.lat*D2R);
     let b=Math.atan2(e,n)/D2R;if(b<0)b+=360;
-    $('#vRange').textContent=Math.hypot(n,e).toFixed(0);
-    $('#vBrg').textContent=b.toFixed(0);
-    $('#mapTag').textContent=`${S.nsat} sats · ${Math.hypot(n,e).toFixed(0)} m from pad · z${mapZ}`;
+    const rng=Math.hypot(n,e);
+    $('#vRange').textContent=rng.toFixed(0);
+    $('#vBrg').textContent=rng<1?'—':b.toFixed(0);   // undefined at the pad
+    $('#mapTag').textContent=`${S.nsat} sats · ${rng.toFixed(0)} m from pad · z${mapZ}`;
   }else{
     $('#vRange').textContent='—';$('#vBrg').textContent='—';
     $('#mapTag').textContent=(S.fix>=3?'fix, no pad reference':'no 3D fix')+` · z${mapZ}`;

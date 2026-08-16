@@ -14,14 +14,29 @@ page talks to the serial port and nothing else.
 
 | Tab | Contents |
 |---|---|
-| FLIGHT | 3D orientation, attitude indicator, altimeter, VSI, live state |
-| NAV | north-up ground track in a local frame, range and bearing from the pad |
+| FLIGHT | 3D orientation · attitude/altimeter/VSI gauges · satellite map, with a data strip beneath |
 | KALMAN | altitude, vertical velocity, and world-up acceleration vs time |
-| ATTITUDE | tilt / roll / azimuth and body angular rates, plus the quaternion |
+| ATTITUDE | tilt / roll / azimuth, body angular rates, quaternion, raw IMU |
 | EVENTS | event records with decoded values, sticky fault bits, loop health |
 
 The serial console is a scrollable strip along the bottom, present on every
 tab, collapsible.
+
+## Map
+
+Satellite imagery is Esri World Imagery, which needs no API key. The slippy-tile
+renderer is hand-rolled rather than Leaflet, so the page stays a single
+self-contained file. On HiDPI displays it fetches one zoom level deeper and
+draws at half size, so imagery lands at native device resolution instead of
+being upscaled.
+
+Scroll or use `+`/`−` to zoom, drag to pan (which releases `follow`). The pad is
+a white cross, the track a blue line, the vehicle a blue dot. Range and bearing
+from the pad are in the data strip.
+
+Tiles need a network connection. With no signal the map degrades to black with
+the track, pad and scale bar still drawn — position data is unaffected, only
+the imagery is missing.
 
 ## 3D view and STL
 
