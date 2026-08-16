@@ -2,683 +2,1145 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>KittyV1 Attitude Viewer</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>KittyV1 Ground Station</title>
 <style>
-  :root {
-    --bg:#0d1117; --panel:#141a22; --panel2:#1b2430; --line:#263241;
-    --fg:#e6edf3; --dim:#7d8996; --accent:#4dd2ff; --ok:#3fb950;
-    --warn:#d29922; --err:#f85149; --mono:ui-monospace,"Cascadia Mono","SF Mono",Menlo,Consolas,monospace;
-  }
-  * { box-sizing:border-box; }
-  html,body { height:100%; margin:0; }
-  body {
-    background:var(--bg); color:var(--fg); font-family:var(--mono);
-    font-size:13px; display:flex; flex-direction:column; overflow:hidden;
-  }
+:root{
+  --bg:#0b0d10; --panel:#101317; --sunk:#0d1014; --edge:#1d2229; --edge2:#2b333c;
+  --fg:#dee3e8; --fg2:#8b949c; --fg3:#565f68;
+  --accent:#4cc2ff; --good:#4cc98a; --warn:#e0a63c; --bad:#e5605e;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono","Cascadia Mono",Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--fg); font:13px/1.45 var(--sans);
+  display:flex; flex-direction:column; overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+button,select,input{font:inherit;color:inherit}
+button,select{
+  background:transparent; border:1px solid var(--edge2); border-radius:2px;
+  padding:4px 10px; cursor:pointer; font-size:11px; letter-spacing:.02em;
+}
+button:hover:not(:disabled),select:hover{border-color:var(--fg3);background:#161a1f}
+button:disabled{opacity:.35;cursor:default}
+button.on{border-color:var(--accent);color:var(--accent)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 
-  /* ---- top bar ---- */
-  header {
-    display:flex; align-items:center; gap:12px; padding:8px 14px;
-    background:var(--panel); border-bottom:1px solid var(--line); flex:0 0 auto; flex-wrap:wrap;
-  }
-  h1 { font-size:14px; margin:0; letter-spacing:.5px; font-weight:600; }
-  h1 span { color:var(--accent); }
-  button, select {
-    font-family:var(--mono); font-size:12px; background:var(--panel2); color:var(--fg);
-    border:1px solid var(--line); border-radius:5px; padding:5px 11px; cursor:pointer;
-  }
-  button:hover:not(:disabled), select:hover { border-color:var(--accent); }
-  button:disabled { opacity:.4; cursor:not-allowed; }
-  button.primary { background:#12303d; border-color:#1d5f79; color:var(--accent); }
-  .dot { width:9px; height:9px; border-radius:50%; background:var(--err); flex:0 0 auto; }
-  .dot.on { background:var(--ok); box-shadow:0 0 8px var(--ok); }
-  .spacer { flex:1 1 auto; }
+/* ---------------------------------------------------------------- chrome */
+#top{
+  display:flex;align-items:stretch;gap:0;height:42px;flex:0 0 auto;
+  border-bottom:1px solid var(--edge); background:var(--panel);
+}
+#brand{
+  display:flex;align-items:center;padding:0 16px;font-size:12px;letter-spacing:.14em;
+  font-weight:600;border-right:1px solid var(--edge);color:var(--fg2);
+}
+#brand b{color:var(--fg);font-weight:600}
+nav{display:flex}
+nav button{
+  border:0;border-radius:0;padding:0 15px;font-size:11px;letter-spacing:.1em;
+  color:var(--fg3);border-bottom:2px solid transparent;
+}
+nav button:hover{background:#151a1f;color:var(--fg2)}
+nav button.sel{color:var(--fg);border-bottom-color:var(--accent);background:transparent}
+#topright{margin-left:auto;display:flex;align-items:center;gap:8px;padding:0 12px}
+#link{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--fg2);
+      font-family:var(--mono);letter-spacing:.02em}
+#led{width:7px;height:7px;border-radius:50%;background:var(--bad)}
+#led.up{background:var(--good)}
 
-  /* ---- layout ---- */
-  main { flex:1 1 auto; display:flex; min-height:0; }
-  #view { flex:1 1 auto; position:relative; min-width:0; background:
-    radial-gradient(ellipse at 50% 35%, #16202c 0%, var(--bg) 70%); }
-  canvas { display:block; width:100%; height:100%; cursor:grab; }
-  canvas:active { cursor:grabbing; }
-  #hint {
-    position:absolute; left:12px; bottom:10px; color:var(--dim); font-size:11px; pointer-events:none;
-  }
-  #srcTag {
-    position:absolute; left:12px; top:10px; font-size:11px; color:var(--dim);
-    background:rgba(13,17,23,.7); padding:3px 8px; border-radius:4px; border:1px solid var(--line);
-  }
+/* ---------------------------------------------------------------- layout */
+main{flex:1 1 auto;min-height:0;position:relative}
+.tab{position:absolute;inset:0;display:none;min-height:0}
+.tab.sel{display:flex}
+.col{display:flex;flex-direction:column;min-width:0;min-height:0}
+.row{display:flex;min-width:0;min-height:0}
+.grow{flex:1 1 auto;min-width:0;min-height:0}
+.side{flex:0 0 268px;border-left:1px solid var(--edge);background:var(--panel);
+      overflow-y:auto;padding:14px}
+.pad{padding:14px}
+.sep{border-top:1px solid var(--edge)}
 
-  aside { flex:0 0 310px; background:var(--panel); border-left:1px solid var(--line);
-          overflow-y:auto; padding:12px; }
-  .grp { margin-bottom:16px; }
-  .grp > h2 {
-    font-size:10px; letter-spacing:1.4px; color:var(--dim); margin:0 0 7px;
-    text-transform:uppercase; font-weight:600;
-  }
-  .big { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; }
-  .big div { background:var(--panel2); border:1px solid var(--line); border-radius:6px;
-             padding:7px 4px; text-align:center; }
-  .big b { display:block; font-size:20px; font-weight:600; line-height:1.15; }
-  .big small { color:var(--dim); font-size:9px; letter-spacing:.6px; }
-  table { width:100%; border-collapse:collapse; }
-  td { padding:2.5px 0; }
-  td:first-child { color:var(--dim); }
-  td:last-child { text-align:right; }
-  .chips { display:flex; flex-wrap:wrap; gap:4px; }
-  .chip { font-size:10px; padding:2.5px 7px; border-radius:99px;
-          border:1px solid var(--line); color:#4a5561; background:var(--panel2); }
-  .chip.lit { color:#fff; }
-  .chip.lit.w { background:#4a3708; border-color:var(--warn); color:var(--warn); }
-  .chip.lit.e { background:#4a1210; border-color:var(--err); color:var(--err); }
+h2{font-size:9.5px;letter-spacing:.16em;color:var(--fg3);font-weight:600;
+   text-transform:uppercase;margin:0 0 8px}
+.blk{margin-bottom:20px}
+dl{display:grid;grid-template-columns:1fr auto;gap:3px 10px;font-size:12px}
+dt{color:var(--fg2)}
+dd{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.hero{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--edge);
+      border:1px solid var(--edge);margin-bottom:20px}
+.hero div{background:var(--panel);padding:9px 10px}
+.hero span{display:block;font-size:9px;letter-spacing:.12em;color:var(--fg3);margin-bottom:2px}
+.hero b{font:400 21px/1 var(--mono);font-variant-numeric:tabular-nums}
+.u{font-size:11px;color:var(--fg3);margin-left:2px}
 
-  /* ---- log ---- */
-  footer { flex:0 0 190px; border-top:1px solid var(--line); background:var(--panel);
-           display:flex; flex-direction:column; }
-  .tabs { display:flex; gap:2px; padding:5px 8px 0; border-bottom:1px solid var(--line); }
-  .tab { font-size:11px; padding:4px 12px; border-radius:5px 5px 0 0; cursor:pointer;
-         color:var(--dim); border:1px solid transparent; border-bottom:none; }
-  .tab.sel { color:var(--fg); background:var(--panel2); border-color:var(--line); }
-  .pane { flex:1 1 auto; overflow-y:auto; padding:6px 10px; font-size:11.5px;
-          line-height:1.55; white-space:pre-wrap; word-break:break-all; display:none; }
-  .pane.sel { display:block; }
-  .I { color:var(--dim); } .W { color:var(--warn); } .E { color:var(--err); }
-  .S { color:var(--accent); }
+/* -------------------------------------------------------------- viewport */
+.view{position:relative;background:var(--sunk)}
+.view canvas{display:block;width:100%;height:100%}
+#gl{cursor:grab} #gl:active{cursor:grabbing}
+.ovl{position:absolute;display:flex;gap:6px;align-items:center;z-index:2}
+.ovl.tl{top:10px;left:12px} .ovl.tr{top:10px;right:12px}
+.ovl.bl{bottom:10px;left:12px}
+.tag{font-family:var(--mono);font-size:10.5px;color:var(--fg3);letter-spacing:.02em}
+.tag.warn{color:var(--warn)}
+label.file{border:1px solid var(--edge2);border-radius:2px;padding:4px 10px;
+           font-size:11px;cursor:pointer;background:rgba(11,13,16,.7)}
+label.file:hover{border-color:var(--fg3);background:#161a1f}
+.ovl select,.ovl button{background:rgba(11,13,16,.7)}
 
-  #nosupport { padding:20px; color:var(--warn); line-height:1.7; }
-  #nosupport code { color:var(--accent); }
+/* -------------------------------------------------------------- gauges */
+#gauges{flex:0 0 212px;display:grid;grid-template-columns:repeat(3,1fr);
+        gap:1px;background:var(--edge);border-top:1px solid var(--edge)}
+.gauge{background:var(--panel);position:relative;display:flex;
+       align-items:center;justify-content:center}
+.gauge canvas{display:block}
+.gauge figcaption{position:absolute;top:8px;left:10px;font-size:9px;
+       letter-spacing:.14em;color:var(--fg3)}
+.gauge .rd{position:absolute;bottom:8px;right:10px;font-family:var(--mono);
+       font-size:11px;color:var(--fg2);font-variant-numeric:tabular-nums}
+
+/* -------------------------------------------------------------- charts */
+.chart{position:relative;border-bottom:1px solid var(--edge);min-height:0}
+.chart:last-child{border-bottom:0}
+.chart canvas{display:block;width:100%;height:100%}
+.chart .ttl{position:absolute;top:8px;left:12px;font-size:9.5px;
+       letter-spacing:.14em;color:var(--fg3)}
+.chart .key{position:absolute;top:8px;right:12px;font-family:var(--mono);
+       font-size:10.5px;display:flex;gap:12px}
+.chart .key i{font-style:normal}
+
+/* -------------------------------------------------------------- events */
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px}
+th{text-align:left;font-weight:400;font-size:9px;letter-spacing:.14em;
+   color:var(--fg3);padding:0 10px 7px 0;border-bottom:1px solid var(--edge);
+   font-family:var(--sans)}
+td{padding:4px 10px 4px 0;border-bottom:1px solid #14181c;vertical-align:top}
+tr.W td.n{color:var(--warn)} tr.E td.n{color:var(--bad)} tr.I td.n{color:var(--fg2)}
+td.dim{color:var(--fg3)} td.note{color:var(--fg2);font-family:var(--sans);font-size:11.5px}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-family:var(--mono);font-size:10px;padding:3px 8px;border:1px solid var(--edge);
+      color:var(--fg3);border-radius:2px}
+.chip.w{border-color:#4a3a18;color:var(--warn);background:#1a1509}
+.chip.e{border-color:#4d2422;color:var(--bad);background:#1c0f0e}
+
+/* ------------------------------------------------------------- console */
+#con{flex:0 0 auto;border-top:1px solid var(--edge);background:var(--panel);
+     display:flex;flex-direction:column;height:126px}
+#con.min{height:29px}
+#conbar{display:flex;align-items:center;gap:8px;padding:0 12px;height:28px;
+        flex:0 0 auto;border-bottom:1px solid var(--edge)}
+#conbar h2{margin:0}
+#conbar .sp{margin-left:auto;display:flex;gap:6px}
+#conout{flex:1 1 auto;overflow-y:auto;padding:5px 12px 8px;
+        font-family:var(--mono);font-size:11px;line-height:1.5;
+        white-space:pre-wrap;word-break:break-all;color:var(--fg2)}
+#con.min #conout{display:none}
+#conout .m{color:var(--fg3)} #conout .w{color:var(--warn)}
+#conout .e{color:var(--bad)} #conout .s{color:var(--accent)}
+::-webkit-scrollbar{width:9px;height:9px}
+::-webkit-scrollbar-thumb{background:#232a31;border-radius:0}
+::-webkit-scrollbar-thumb:hover{background:#2f3841}
+::-webkit-scrollbar-track{background:transparent}
+
+#nosup{padding:40px;max-width:560px;line-height:1.8;color:var(--fg2)}
+#nosup code{font-family:var(--mono);color:var(--accent)}
 </style>
 </head>
 <body>
 
-<header>
-  <h1>Kitty<span>V1</span> &nbsp;Attitude Viewer</h1>
-  <div class="dot" id="dot"></div>
-  <button class="primary" id="btnConnect">Connect</button>
-  <select id="baud">
-    <option>115200</option><option>230400</option><option>460800</option>
-    <option>57600</option><option>9600</option>
-  </select>
-  <button id="btnDump" disabled>dump log (l)</button>
-  <button id="btnHdr" disabled>header (h)</button>
-  <div class="spacer"></div>
-  <button id="btnDemo">Demo</button>
-  <button id="btnCsv">CSV</button>
-  <button id="btnClear">Clear</button>
-</header>
+<div id="top">
+  <div id="brand">KITTY<b>V1</b></div>
+  <nav>
+    <button class="sel" data-t="flight">FLIGHT</button>
+    <button data-t="nav">NAV</button>
+    <button data-t="kalman">KALMAN</button>
+    <button data-t="att">ATTITUDE</button>
+    <button data-t="events">EVENTS</button>
+  </nav>
+  <div id="topright">
+    <div id="link"><span id="led"></span><span id="linktxt">offline</span></div>
+    <select id="baud">
+      <option>115200</option><option>230400</option><option>460800</option>
+      <option>57600</option><option>9600</option>
+    </select>
+    <button id="bConnect">Connect</button>
+    <button id="bDemo">Demo</button>
+  </div>
+</div>
 
 <main>
-  <div id="view">
-    <canvas id="cv"></canvas>
-    <div id="srcTag">no data</div>
-    <div id="hint">drag to orbit &middot; scroll to zoom &middot; body X = nose (red)</div>
-  </div>
-
-  <aside>
-    <div class="grp">
-      <h2>Attitude</h2>
-      <div class="big">
-        <div><b id="vTilt">—</b><small>TILT&deg;</small></div>
-        <div><b id="vRoll">—</b><small>ROLL&deg;</small></div>
-        <div><b id="vAzi">—</b><small>AZI&deg;</small></div>
+  <!-- ============================================================ FLIGHT -->
+  <section class="tab sel col" data-t="flight">
+    <div class="row grow">
+      <div class="col grow">
+        <div class="view grow">
+          <canvas id="gl"></canvas>
+          <div class="ovl tl"><span class="tag" id="srcTag">no data</span></div>
+          <div class="ovl tr">
+            <label class="file">STL<input type="file" id="stl" accept=".stl" hidden></label>
+            <select id="noseAxis" title="which model axis points out the nose">
+              <option value="0">nose +X</option><option value="1">nose −X</option>
+              <option value="2">nose +Y</option><option value="3">nose −Y</option>
+              <option value="4" selected>nose +Z</option><option value="5">nose −Z</option>
+            </select>
+            <button id="bModel">reset model</button>
+            <button id="bView">reset view</button>
+          </div>
+          <div class="ovl bl"><span class="tag">drag orbit &nbsp;·&nbsp; scroll zoom &nbsp;·&nbsp; body +X = nose</span></div>
+        </div>
+        <div id="gauges">
+          <figure class="gauge"><figcaption>ATTITUDE</figcaption>
+            <canvas id="gAi"></canvas><div class="rd" id="rdAi">—</div></figure>
+          <figure class="gauge"><figcaption>ALTITUDE &nbsp;m AGL</figcaption>
+            <canvas id="gAlt"></canvas><div class="rd" id="rdAlt">—</div></figure>
+          <figure class="gauge"><figcaption>VERTICAL SPEED &nbsp;m/s</figcaption>
+            <canvas id="gVs"></canvas><div class="rd" id="rdVs">—</div></figure>
+        </div>
       </div>
+      <aside class="side">
+        <div class="hero">
+          <div><span>TILT</span><b id="vTilt">—</b><span class="u">deg from vertical</span></div>
+          <div><span>ROLL</span><b id="vRoll">—</b><span class="u">deg about nose</span></div>
+          <div><span>ALT AGL</span><b id="vAlt">—</b><span class="u">m</span></div>
+          <div><span>V SPEED</span><b id="vVv">—</b><span class="u">m/s</span></div>
+        </div>
+        <div class="blk"><h2>Derived</h2><dl>
+          <dt>azimuth</dt><dd><span id="vAzi">—</span>°</dd>
+          <dt>accel up</dt><dd><span id="vAup">—</span> m/s²</dd>
+          <dt>apogee</dt><dd><span id="vApo">—</span> m</dd>
+          <dt>max v speed</dt><dd><span id="vMaxV">—</span> m/s</dd>
+        </dl></div>
+        <div class="blk" id="bRaw" hidden><h2>IMU · body frame</h2><dl>
+          <dt>accel</dt><dd><span id="vAcc">—</span> g</dd>
+          <dt>|a|</dt><dd><span id="vAmag">—</span> g</dd>
+          <dt>gyro</dt><dd><span id="vGyr">—</span> °/s</dd>
+          <dt>die temp</dt><dd><span id="vTemp">—</span> °C</dd>
+        </dl></div>
+        <div class="blk" id="bMag" hidden><h2>Magnetometer</h2><dl>
+          <dt>field</dt><dd><span id="vMg">—</span> µT</dd>
+          <dt>|B|</dt><dd><span id="vBm">—</span> µT</dd>
+        </dl></div>
+        <div class="blk"><h2>Faults · sticky</h2><div class="chips" id="chips"></div></div>
+      </aside>
     </div>
+  </section>
 
-    <div class="grp">
-      <h2>Altitude &amp; accel</h2>
-      <table>
-        <tr><td>alt AGL</td><td><span id="vAlt">—</span> m</td></tr>
-        <tr><td>vert vel</td><td><span id="vVv">—</span> m/s</td></tr>
-        <tr><td>accel up</td><td><span id="vAup">—</span> m/s&sup2;</td></tr>
-      </table>
+  <!-- =============================================================== NAV -->
+  <section class="tab col" data-t="nav">
+    <div class="row grow">
+      <div class="view grow"><canvas id="map"></canvas>
+        <div class="ovl tl"><span class="tag" id="mapTag">no fix</span></div>
+        <div class="ovl tr"><button id="bTrack">clear track</button></div>
+      </div>
+      <aside class="side">
+        <div class="hero">
+          <div><span>RANGE</span><b id="vRange">—</b><span class="u">m from pad</span></div>
+          <div><span>BEARING</span><b id="vBrg">—</b><span class="u">deg true</span></div>
+        </div>
+        <div class="blk"><h2>Position</h2><dl>
+          <dt>latitude</dt><dd id="vLat">—</dd>
+          <dt>longitude</dt><dd id="vLon">—</dd>
+          <dt>fix type</dt><dd id="vFix">—</dd>
+          <dt>satellites</dt><dd id="vSat">—</dd>
+        </dl></div>
+        <div class="blk"><h2>Pad reference</h2><dl>
+          <dt>latitude</dt><dd id="vPLat">—</dd>
+          <dt>longitude</dt><dd id="vPLon">—</dd>
+          <dt>track points</dt><dd id="vPts">0</dd>
+        </dl></div>
+        <div class="blk"><h2>Recovery</h2>
+          <a id="mapLink" target="_blank" rel="noopener"
+             style="font-size:11.5px;color:var(--accent);text-decoration:none">open in maps →</a>
+          <p style="font-size:11px;color:var(--fg3);margin-top:8px;line-height:1.6">
+            Track is plotted in a local north/east frame relative to the pad —
+            no tiles, so it works with no signal at the field.</p>
+        </div>
+      </aside>
     </div>
+  </section>
 
-    <div class="grp" id="grpRaw" style="display:none">
-      <h2>Raw IMU (body)</h2>
-      <table>
-        <tr><td>accel</td><td><span id="vAcc">—</span> g</td></tr>
-        <tr><td>|a|</td><td><span id="vAmag">—</span> g</td></tr>
-        <tr><td>gyro</td><td><span id="vGyr">—</span> &deg;/s</td></tr>
-        <tr><td>temp</td><td><span id="vTemp">—</span> &deg;C</td></tr>
-      </table>
+  <!-- ============================================================ KALMAN -->
+  <section class="tab col" data-t="kalman">
+    <div class="row grow">
+      <div class="col grow">
+        <div class="chart grow"><canvas id="cAlt"></canvas>
+          <div class="ttl">ALTITUDE AGL &nbsp;m</div>
+          <div class="key"><i style="color:#4cc2ff">KF</i></div></div>
+        <div class="chart grow"><canvas id="cVv"></canvas>
+          <div class="ttl">VERTICAL VELOCITY &nbsp;m/s</div>
+          <div class="key"><i style="color:#4cc98a">KF</i></div></div>
+        <div class="chart grow"><canvas id="cAup"></canvas>
+          <div class="ttl">WORLD-UP ACCELERATION &nbsp;m/s² &nbsp;· gravity removed</div>
+          <div class="key"><i style="color:#e0a63c">a·up</i></div></div>
+      </div>
+      <aside class="side">
+        <div class="blk"><h2>Filter state</h2><dl>
+          <dt>altitude</dt><dd><span id="kAlt">—</span> m</dd>
+          <dt>velocity</dt><dd><span id="kVv">—</span> m/s</dd>
+          <dt>accel in</dt><dd><span id="kAup">—</span> m/s²</dd>
+        </dl></div>
+        <div class="blk"><h2>Flight</h2><dl>
+          <dt>apogee</dt><dd><span id="kApo">—</span> m</dd>
+          <dt>max ascent</dt><dd><span id="kMaxU">—</span> m/s</dd>
+          <dt>max descent</dt><dd><span id="kMaxD">—</span> m/s</dd>
+          <dt>peak accel</dt><dd><span id="kMaxA">—</span> m/s²</dd>
+          <dt>samples</dt><dd id="kN">0</dd>
+        </dl></div>
+        <div class="blk"><h2>Window</h2>
+          <select id="win" style="width:100%">
+            <option value="30">last 30 s</option>
+            <option value="60" selected>last 60 s</option>
+            <option value="180">last 3 min</option>
+            <option value="0">entire session</option>
+          </select>
+        </div>
+        <div class="blk"><h2>Note</h2>
+          <p style="font-size:11px;color:var(--fg3);line-height:1.6">
+            Altitude is AGL from the pad reference, not MSL. The KF propagates on
+            accelerometer and is corrected by baro at 50 Hz — and by GPS once a
+            pad reference exists.</p></div>
+      </aside>
     </div>
+  </section>
 
-    <div class="grp" id="grpMag" style="display:none">
-      <h2>Raw mag (body)</h2>
-      <table>
-        <tr><td>field</td><td><span id="vMag">—</span> &micro;T</td></tr>
-        <tr><td>|B|</td><td><span id="vBmag">—</span> &micro;T</td></tr>
-      </table>
+  <!-- ========================================================== ATTITUDE -->
+  <section class="tab col" data-t="att">
+    <div class="row grow">
+      <div class="col grow">
+        <div class="chart grow"><canvas id="cTilt"></canvas>
+          <div class="ttl">TILT FROM VERTICAL &nbsp;deg</div>
+          <div class="key"><i style="color:#4cc2ff">tilt</i></div></div>
+        <div class="chart grow"><canvas id="cRoll"></canvas>
+          <div class="ttl">ROLL ABOUT NOSE / AZIMUTH &nbsp;deg</div>
+          <div class="key"><i style="color:#4cc98a">roll</i><i style="color:#b98ce0">azi</i></div></div>
+        <div class="chart grow"><canvas id="cGyr"></canvas>
+          <div class="ttl">ANGULAR RATE · body &nbsp;deg/s</div>
+          <div class="key"><i style="color:#e5605e">p</i><i style="color:#4cc98a">q</i><i style="color:#4cc2ff">r</i></div></div>
+      </div>
+      <aside class="side">
+        <div class="blk"><h2>Angles</h2><dl>
+          <dt>tilt</dt><dd><span id="aTilt">—</span>°</dd>
+          <dt>roll</dt><dd><span id="aRoll">—</span>°</dd>
+          <dt>azimuth</dt><dd><span id="aAzi">—</span>°</dd>
+        </dl></div>
+        <div class="blk"><h2>Quaternion · body→world</h2><dl>
+          <dt>w</dt><dd id="qw">1.0000</dd><dt>x</dt><dd id="qx">0.0000</dd>
+          <dt>y</dt><dd id="qy">0.0000</dd><dt>z</dt><dd id="qz">0.0000</dd>
+        </dl></div>
+        <div class="blk"><h2>Nose in world</h2><dl>
+          <dt>east</dt><dd id="nx">—</dd><dt>north</dt><dd id="ny">—</dd><dt>up</dt><dd id="nz">—</dd>
+        </dl></div>
+        <div class="blk"><h2>Note</h2>
+          <p style="font-size:11px;color:var(--fg3);line-height:1.6">
+            The quaternion is reconstructed from tilt/roll/azimuth by inverting the
+            firmware's swing–twist decomposition. Those three angles fully
+            parameterise SO(3), so it is exact rather than approximate.</p></div>
+      </aside>
     </div>
+  </section>
 
-    <div class="grp">
-      <h2>GPS</h2>
-      <table>
-        <tr><td>fix / sats</td><td><span id="vFix">—</span></td></tr>
-        <tr><td>lat</td><td><span id="vLat">—</span></td></tr>
-        <tr><td>lon</td><td><span id="vLon">—</span></td></tr>
-      </table>
+  <!-- ============================================================ EVENTS -->
+  <section class="tab col" data-t="events">
+    <div class="row grow">
+      <div class="col grow pad" style="overflow-y:auto">
+        <h2>Event records</h2>
+        <table><thead><tr>
+          <th style="width:70px">FIRST</th><th style="width:70px">LAST</th>
+          <th style="width:170px">EVENT</th><th style="width:60px">COUNT</th>
+          <th style="width:90px">VALUE</th><th>INTERPRETATION</th>
+        </tr></thead><tbody id="evb">
+          <tr><td colspan="6" class="dim" style="padding-top:12px">no events yet</td></tr>
+        </tbody></table>
+      </div>
+      <aside class="side">
+        <div class="blk"><h2>Loop health</h2><dl>
+          <dt>telemetry rows/s</dt><dd id="hRate">—</dd>
+          <dt>implied loop</dt><dd><span id="hHz">—</span> Hz</dd>
+          <dt>last loop work</dt><dd><span id="hUs">—</span> µs</dd>
+          <dt>overruns</dt><dd id="hOvr">—</dd>
+          <dt>overruns/s</dt><dd id="hOvrR">—</dd>
+          <dt>imu timeouts</dt><dd id="hTmo">—</dd>
+        </dl></div>
+        <div class="blk"><h2>Faults · sticky</h2><div class="chips" id="chips2"></div></div>
+        <div class="blk"><h2>STATS</h2>
+          <div class="mono" id="statsLine" style="font-size:11px;color:var(--fg2);
+               line-height:1.7;word-break:break-all">—</div></div>
+        <div class="blk"><h2>Note</h2>
+          <p style="font-size:11px;color:var(--fg3);line-height:1.6">
+            Counts include occurrences the firmware suppressed — printing is
+            throttled to one line per code per second, but every occurrence is
+            counted. Fault bits latch and never clear.</p></div>
+      </aside>
     </div>
-
-    <div class="grp">
-      <h2>Loop health</h2>
-      <table>
-        <tr><td>rows/s</td><td><span id="vRate">—</span></td></tr>
-        <tr><td>implied loop</td><td><span id="vLoopHz">—</span> Hz</td></tr>
-        <tr><td>loop work</td><td><span id="vLoopUs">—</span> &micro;s</td></tr>
-        <tr><td>overruns</td><td><span id="vOvr">—</span></td></tr>
-        <tr><td>overruns/s</td><td><span id="vOvrRate">—</span></td></tr>
-        <tr><td>imu timeouts</td><td><span id="vTmo">—</span></td></tr>
-      </table>
-    </div>
-
-    <div class="grp">
-      <h2>Faults (sticky)</h2>
-      <div class="chips" id="faults"></div>
-    </div>
-  </aside>
+  </section>
 </main>
 
-<footer>
-  <div class="tabs">
-    <div class="tab sel" data-pane="log">Events</div>
-    <div class="tab" data-pane="raw">Raw serial</div>
+<div id="con">
+  <div id="conbar">
+    <h2>Serial console</h2>
+    <div class="sp">
+      <button id="bDump" disabled>dump log · l</button>
+      <button id="bHdr" disabled>header · h</button>
+      <button id="bCsv">export CSV</button>
+      <button id="bClr">clear</button>
+      <button id="bMin">hide</button>
+    </div>
   </div>
-  <div class="pane sel" id="log"></div>
-  <div class="pane" id="raw"></div>
-</footer>
+  <div id="conout"></div>
+</div>
 
-<div id="nosupport" hidden>
-  <b>Web Serial is not available in this browser.</b><br>
-  Use Chrome or Edge on desktop, over <code>https://</code> or <code>localhost</code>.
-  Firefox and Safari do not implement the API.
+<div id="nosup" hidden>
+  <h2 style="font-size:13px;letter-spacing:0;color:var(--fg);text-transform:none">
+    Web Serial is not available in this browser.</h2>
+  <p style="margin-top:10px">Use Chrome or Edge on desktop, served over
+  <code>https://</code> or <code>localhost</code>. Firefox and Safari do not
+  implement the API, and it is unavailable inside sandboxed iframes.</p>
 </div>
 
 <script>
 "use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 
-/* ==========================================================================
-   KittyV1 telemetry decoder + attitude visualiser.
-
-   Wire format (see telemetry.cpp). Rows are distinguished by field count,
-   which is unambiguous across the three TELEMETRY_MODEs:
-     15  flight : ms tilt roll azi alt vv aup lat lon fix nsat loop_us ovr tmo flt
-      8  raw imu: ms ax ay az gx gy gz temp
-      5  raw mag: ms mx my mz |B|
-   Lines beginning with '#' are meta: headers, events, STATS.
-   ========================================================================== */
-
-const $ = id => document.getElementById(id);
-
-/* ---------------------------------------------------------------- state */
-const S = {
-  tilt:null, roll:null, azi:null,          // deg, from flight rows
-  q:[1,0,0,0],                             // body->world, scalar first
-  accel:null, gyro:null, temp:null,        // raw imu
-  mag:null,
-  alt:null, vv:null, aup:null,
-  fix:0, nsat:0, lat:0, lon:0,
-  loopUs:0, ovr:0, tmo:0, faults:0,
-  source:'none',                           // 'flight' | 'accel' | 'demo'
-  rows:0, rowsAtMark:0, ovrAtMark:0, tMark:performance.now(),
-  rate:0, ovrRate:0,
-  csv:[]
+/* ═════════════════════════════════════════════════════════ state + history */
+const S={
+  tilt:0,roll:0,azi:0,q:[1,0,0,0],
+  alt:null,vv:null,aup:null,
+  accel:null,gyro:null,temp:null,mag:null,
+  lat:0,lon:0,fix:0,nsat:0,
+  loopUs:0,ovr:0,tmo:0,faults:0,
+  src:'none',
+  apogee:-Infinity,maxUp:-Infinity,maxDn:Infinity,maxA:0,
+  rows:0,rowsMark:0,ovrMark:0,tMark:performance.now(),rate:0,ovrRate:0,
+  t0:performance.now()
 };
+const H={t:[],alt:[],vv:[],aup:[],tilt:[],roll:[],azi:[],gp:[],gq:[],gr:[]};
+const HMAX=40000;
+let track=[], pad=null;
+const events=new Map();
+let csv=[];
 
-const FAULT_BITS = [
-  [0x01,'IMU INIT','e'], [0x02,'BARO INIT','e'], [0x04,'GYRO CAL','w'],
-  [0x08,'IMU TMO','w'],  [0x10,'OVERRUN','w'],   [0x20,'BARO DATA','w'],
-  [0x40,'MAG INIT','w'], [0x80,'GPS INIT','w']
-];
+const FAULTS=[[0x01,'IMU INIT','e'],[0x02,'BARO INIT','e'],[0x04,'GYRO CAL','w'],
+  [0x08,'IMU TMO','w'],[0x10,'OVERRUN','w'],[0x20,'BARO DATA','w'],
+  [0x40,'MAG INIT','w'],[0x80,'GPS INIT','w']];
 
-/* ------------------------------------------------------------ quaternion */
-const qMul = (a,b) => [
-  a[0]*b[0] - a[1]*b[1] - a[2]*b[2] - a[3]*b[3],
-  a[0]*b[1] + a[1]*b[0] + a[2]*b[3] - a[3]*b[2],
-  a[0]*b[2] - a[1]*b[3] + a[2]*b[0] + a[3]*b[1],
-  a[0]*b[3] + a[1]*b[2] - a[2]*b[1] + a[3]*b[0]
-];
-function qNorm(q){
-  const n = Math.hypot(q[0],q[1],q[2],q[3]) || 1;
-  return [q[0]/n, q[1]/n, q[2]/n, q[3]/n];
-}
-/* v_world = R(q) * v_body */
-function qRot(q, v){
-  const [w,x,y,z] = q, [a,b,c] = v;
-  return [
-    (1-2*(y*y+z*z))*a + 2*(x*y - w*z)*b + 2*(x*z + w*y)*c,
-    2*(x*y + w*z)*a + (1-2*(x*x+z*z))*b + 2*(y*z - w*x)*c,
-    2*(x*z - w*y)*a + 2*(y*z + w*x)*b + (1-2*(x*x+y*y))*c
-  ];
+function hist(t){
+  H.t.push(t);H.alt.push(S.alt);H.vv.push(S.vv);H.aup.push(S.aup);
+  H.tilt.push(S.tilt);H.roll.push(S.roll);H.azi.push(S.azi);
+  H.gp.push(S.gyro?S.gyro[0]:null);H.gq.push(S.gyro?S.gyro[1]:null);
+  H.gr.push(S.gyro?S.gyro[2]:null);
+  if(H.t.length>HMAX) for(const k in H) H[k].splice(0,H[k].length-HMAX);
 }
 
-/* Shortest-arc quaternion rotating body +X onto a unit world vector n.
-   This is exactly the "swing" half of the firmware's swing-twist split:
-   its x-component is zero, i.e. it rotates about an axis perpendicular
-   to the nose, which is what makes it the shortest arc. */
-function swingFromNose(n){
-  const w = 1 + n[0];
-  if (w < 1e-7) return [0,0,0,1];          // nose reversed: 180 deg about Z
-  return qNorm([w, 0, -n[2], n[1]]);       // axis = x_hat x n = (0,-nz,ny)
-}
+/* ═══════════════════════════════════════════════════════════════ quaternion */
+const qMul=(a,b)=>[a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3],
+ a[0]*b[1]+a[1]*b[0]+a[2]*b[3]-a[3]*b[2],
+ a[0]*b[2]-a[1]*b[3]+a[2]*b[0]+a[3]*b[1],
+ a[0]*b[3]+a[1]*b[2]-a[2]*b[1]+a[3]*b[0]];
+const qN=q=>{const n=Math.hypot(q[0],q[1],q[2],q[3])||1;return[q[0]/n,q[1]/n,q[2]/n,q[3]/n]};
+function qRot(q,v){const[w,x,y,z]=q,[a,b,c]=v;return[
+ (1-2*(y*y+z*z))*a+2*(x*y-w*z)*b+2*(x*z+w*y)*c,
+ 2*(x*y+w*z)*a+(1-2*(x*x+z*z))*b+2*(y*z-w*x)*c,
+ 2*(x*z-w*y)*a+2*(y*z+w*x)*b+(1-2*(x*x+y*y))*c]}
+const noseOf=q=>[1-2*(q[2]**2+q[3]**2),2*(q[1]*q[2]+q[0]*q[3]),2*(q[1]*q[3]-q[0]*q[2])];
 
-/* Rebuild the firmware's quaternion from the three telemetry angles.
-   tilt = acos(nose_z), azi = atan2(nose_y, nose_x), roll = 2*atan2(qx,qw).
-   Reconstruction is exact because those three fully parameterise SO(3). */
-function qFromAngles(tiltDeg, rollDeg, aziDeg){
-  const t = tiltDeg*Math.PI/180, a = aziDeg*Math.PI/180, r = rollDeg*Math.PI/180;
-  const nose = [Math.sin(t)*Math.cos(a), Math.sin(t)*Math.sin(a), Math.cos(t)];
-  const twist = [Math.cos(r/2), Math.sin(r/2), 0, 0];   // about body X
-  return qNorm(qMul(swingFromNose(nose), twist));
+/* Inverse of the firmware's swing-twist split (attitude.cpp).
+   The swing has zero x-component, i.e. it rotates about an axis perpendicular
+   to the nose — which is exactly the shortest arc onto the nose direction. */
+function swing(n){const w=1+n[0];return w<1e-7?[0,0,0,1]:qN([w,0,-n[2],n[1]])}
+function qFromAngles(t,r,a){
+  const T=t*Math.PI/180,A=a*Math.PI/180,R=r*Math.PI/180;
+  return qN(qMul(swing([Math.sin(T)*Math.cos(A),Math.sin(T)*Math.sin(A),Math.cos(T)]),
+                 [Math.cos(R/2),Math.sin(R/2),0,0]));
 }
-
-/* Orientation from gravity alone: rotate measured "up" (body) onto world +Z.
-   Roll about the nose is unobservable from accel, so it stays zero. */
 function qFromAccel(a){
-  const m = Math.hypot(a[0],a[1],a[2]);
-  if (m < 0.3 || m > 3) return null;
-  const u = [a[0]/m, a[1]/m, a[2]/m];
-  const w = 1 + u[2];
-  if (w < 1e-7) return [0,0,1,0];
-  return qNorm([w, u[1], -u[0], 0]);
+  const m=Math.hypot(a[0],a[1],a[2]); if(m<.3||m>3) return null;
+  const u=[a[0]/m,a[1]/m,a[2]/m], w=1+u[2];
+  return w<1e-7?[0,0,1,0]:qN([w,u[1],-u[0],0]);
 }
 
-/* ---------------------------------------------------------- rocket model */
-/* Body frame: +X out the nose, matching the firmware's convention. */
-function buildRocket(){
-  const R = 0.17, XT = -1.0, XS = 0.45, XN = 1.08, N = 18;
-  const faces = [];
-  const ring = x => Array.from({length:N}, (_,i) => {
-    const th = i/N*2*Math.PI; return [x, R*Math.cos(th), R*Math.sin(th)];
-  });
-  const r0 = ring(XT), r1 = ring(XS);
+/* ═════════════════════════════════════════════════════════════════ matrices */
+const M={
+  mul(a,b){const o=new Float32Array(16);
+    for(let c=0;c<4;c++)for(let r=0;r<4;r++)
+      o[c*4+r]=a[r]*b[c*4]+a[4+r]*b[c*4+1]+a[8+r]*b[c*4+2]+a[12+r]*b[c*4+3];
+    return o},
+  persp(f,as,n,fa){const t=1/Math.tan(f/2);
+    return new Float32Array([t/as,0,0,0, 0,t,0,0, 0,0,(fa+n)/(n-fa),-1, 0,0,2*fa*n/(n-fa),0])},
+  look(e,c,u){
+    const z=nrm([e[0]-c[0],e[1]-c[1],e[2]-c[2]]),x=nrm(crs(u,z)),y=crs(z,x);
+    return new Float32Array([x[0],y[0],z[0],0, x[1],y[1],z[1],0, x[2],y[2],z[2],0,
+      -dot(x,e),-dot(y,e),-dot(z,e),1])},
+  quat(q){const[w,x,y,z]=q;return new Float32Array([
+    1-2*(y*y+z*z),2*(x*y+w*z),2*(x*z-w*y),0,
+    2*(x*y-w*z),1-2*(x*x+z*z),2*(y*z+w*x),0,
+    2*(x*z+w*y),2*(y*z-w*x),1-2*(x*x+y*y),0, 0,0,0,1])},
+  scale(s){return new Float32Array([s,0,0,0, 0,s,0,0, 0,0,s,0, 0,0,0,1])},
+  trans(t){return new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, t[0],t[1],t[2],1])},
+  m3(m){return new Float32Array([m[0],m[1],m[2],m[4],m[5],m[6],m[8],m[9],m[10]])}
+};
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const crs=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const nrm=v=>{const n=Math.hypot(...v)||1;return[v[0]/n,v[1]/n,v[2]/n]};
 
-  for (let i=0;i<N;i++){
-    const j = (i+1)%N;
-    // one lengthwise stripe on the +Y side so roll is readable
-    const stripe = (i===0 || i===1);
-    faces.push({p:[r0[i],r0[j],r1[j],r1[i]], c: stripe ? [235,80,60] : [176,186,197]});
+/* ═══════════════════════════════════════════════════════════════════ meshes */
+function pushTri(P,C,a,b,c,col){
+  const u=[b[0]-a[0],b[1]-a[1],b[2]-a[2]],v=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];
+  const n=nrm(crs(u,v));
+  for(const p of[a,b,c]){P.push(p[0],p[1],p[2],n[0],n[1],n[2]);C.push(...col)}
+}
+/* Default vehicle: body +X out the nose, matching the firmware. */
+function rocketMesh(){
+  const P=[],C=[],R=.16,XT=-1,XS=.42,XN=1.06,N=24;
+  const grey=[.62,.66,.70],pale=[.74,.77,.80],mark=[.86,.31,.26],
+        fin=[.34,.44,.55],can=[.30,.72,.92],dark=[.22,.25,.29];
+  const ring=x=>Array.from({length:N},(_,i)=>{const a=i/N*2*Math.PI;
+    return[x,R*Math.cos(a),R*Math.sin(a)]});
+  const r0=ring(XT),r1=ring(XS);
+  for(let i=0;i<N;i++){const j=(i+1)%N,col=(i<2)?mark:grey;
+    pushTri(P,C,r0[i],r0[j],r1[j],col);pushTri(P,C,r0[i],r1[j],r1[i],col)}
+  for(let i=0;i<N;i++)pushTri(P,C,r1[i],r1[(i+1)%N],[XN,0,0],pale);
+  for(let i=1;i<N-1;i++)pushTri(P,C,r0[0],r0[i+1],r0[i],dark);
+  const panel=(ph,x0,x1,x2,x3,ra,rb,col)=>{
+    const u=[0,Math.cos(ph),Math.sin(ph)],p=(x,r)=>[x,u[1]*r,u[2]*r];
+    pushTri(P,C,p(x0,ra),p(x1,ra),p(x2,rb),col);
+    pushTri(P,C,p(x0,ra),p(x2,rb),p(x3,rb),col)};
+  for(let k=0;k<4;k++){const ph=k*Math.PI/2;
+    panel(ph,-1,-.5,-.62,-1,R,R+.34,fin);
+    panel(ph,.06,.30,.27,.10,R,R+.17,can)}
+  return{pos:new Float32Array(P),col:new Float32Array(C),n:P.length/6};
+}
+/* STL: binary detected by exact byte-length match, else ASCII.
+   Normals are recomputed from geometry — the stored ones are routinely wrong. */
+function parseSTL(buf){
+  const dv=new DataView(buf);
+  if(buf.byteLength>=84){
+    const n=dv.getUint32(80,true);
+    if(84+n*50===buf.byteLength){
+      const P=[],C=[],col=[.66,.69,.72];
+      for(let i=0;i<n;i++){const o=84+i*50,v=[];
+        for(let k=0;k<3;k++)v.push([dv.getFloat32(o+12+k*12,true),
+          dv.getFloat32(o+16+k*12,true),dv.getFloat32(o+20+k*12,true)]);
+        pushTri(P,C,v[0],v[1],v[2],col)}
+      return{pos:new Float32Array(P),col:new Float32Array(C),n:P.length/6};
+    }
   }
-  const apex = [XN,0,0];
-  for (let i=0;i<N;i++) faces.push({p:[r1[i], r1[(i+1)%N], apex], c:[214,222,231]});
-  faces.push({p:r0.slice().reverse(), c:[70,80,92]});                    // tail cap
+  const txt=new TextDecoder().decode(buf),P=[],C=[],col=[.66,.69,.72],v=[];
+  const re=/vertex\s+(-?[\d.eE+-]+)\s+(-?[\d.eE+-]+)\s+(-?[\d.eE+-]+)/g;
+  let m; while((m=re.exec(txt))){v.push([+m[1],+m[2],+m[3]]);
+    if(v.length===3){pushTri(P,C,v[0],v[1],v[2],col);v.length=0}}
+  if(!P.length) throw new Error('no triangles found');
+  return{pos:new Float32Array(P),col:new Float32Array(C),n:P.length/6};
+}
+/* Centre on the bounding box and normalise the longest axis to 2 units. */
+function fitMesh(m){
+  const lo=[1e30,1e30,1e30],hi=[-1e30,-1e30,-1e30];
+  for(let i=0;i<m.pos.length;i+=6)for(let k=0;k<3;k++){
+    lo[k]=Math.min(lo[k],m.pos[i+k]);hi[k]=Math.max(hi[k],m.pos[i+k])}
+  const c=[0,1,2].map(k=>(lo[k]+hi[k])/2);
+  const s=2/Math.max(hi[0]-lo[0],hi[1]-lo[1],hi[2]-lo[2],1e-6);
+  m.centre=c;m.scale=s;return m;
+}
+/* Rotation taking the chosen model axis onto body +X, det = +1 by construction. */
+function alignMat(idx){
+  const AX=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]],r0=AX[idx];
+  const t=Math.abs(r0[0])<.9?[1,0,0]:[0,0,1];
+  const r1=nrm(crs(r0,t)),r2=crs(r0,r1);
+  return new Float32Array([r0[0],r1[0],r2[0],0, r0[1],r1[1],r2[1],0,
+                           r0[2],r1[2],r2[2],0, 0,0,0,1]);
+}
 
-  const panel = (phi, x0,x1,x2,x3, r0_,r1_, col) => {
-    const u = [0, Math.cos(phi), Math.sin(phi)];
-    const P = (x,rr) => [x, u[1]*rr, u[2]*rr];
-    faces.push({p:[P(x0,r0_),P(x1,r0_),P(x2,r1_),P(x3,r1_)], c:col, flat:true});
-  };
-  for (let k=0;k<4;k++){
-    const phi = k*Math.PI/2;
-    panel(phi, -1.0,-0.52,-0.66,-1.0, R, R+0.36, [ 96,130,168]);   // tail fins
-    panel(phi,  0.10, 0.34, 0.30, 0.14, R, R+0.19, [ 78,210,255]);  // canards
+/* ═══════════════════════════════════════════════════════════════════ WebGL */
+const glc=$('#gl');
+const gl=glc.getContext('webgl',{antialias:true,alpha:false});
+let prog,buf,mesh,meshIsSTL=false,lineBuf,lineN;
+let cam={yaw:-.9,pitch:.30,dist:5.0};
+
+const VS=`attribute vec3 aP;attribute vec3 aN;attribute vec3 aC;
+uniform mat4 uMVP,uMV;uniform mat3 uNM;varying vec3 vN,vP,vC;
+void main(){vN=uNM*aN;vP=(uMV*vec4(aP,1.)).xyz;vC=aC;gl_Position=uMVP*vec4(aP,1.);}`;
+const FS=`precision mediump float;varying vec3 vN,vP,vC;uniform float uFlat;
+void main(){
+  if(uFlat>.5){gl_FragColor=vec4(vC,1.);return;}
+  vec3 n=normalize(vN); if(!gl_FrontFacing) n=-n;
+  float k=max(dot(n,normalize(vec3(.35,.55,.75))),0.)*.8
+        + max(dot(n,normalize(vec3(-.5,-.3,.2))),0.)*.18;
+  float rim=pow(1.-max(dot(n,normalize(-vP)),0.),3.)*.35;
+  gl_FragColor=vec4(vC*(.20+k)+vec3(.30,.42,.55)*rim,1.);}`;
+
+function shader(t,src){const s=gl.createShader(t);gl.shaderSource(s,src);
+  gl.compileShader(s);
+  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));
+  return s}
+
+function initGL(){
+  prog=gl.createProgram();
+  gl.attachShader(prog,shader(gl.VERTEX_SHADER,VS));
+  gl.attachShader(prog,shader(gl.FRAGMENT_SHADER,FS));
+  gl.linkProgram(prog);gl.useProgram(prog);
+  buf=gl.createBuffer();lineBuf=gl.createBuffer();
+  gl.enable(gl.DEPTH_TEST);gl.clearColor(.051,.063,.078,1);
+
+  /* ground grid + world axes, built once */
+  const L=[],G=2.4,st=G/6,gc=[.105,.125,.145],ax=[.145,.175,.205];
+  for(let i=-6;i<=6;i++){const t=i*st,c=i?gc:ax;
+    L.push(t,-G,0,0,0,1,...c, t,G,0,0,0,1,...c);
+    L.push(-G,t,0,0,0,1,...c, G,t,0,0,0,1,...c)}
+  const A=(v,c)=>L.push(0,0,0,0,0,1,...c, ...v,0,0,1,...c);
+  A([1.7,0,0],[.42,.20,.20]);A([0,1.7,0],[.20,.40,.26]);A([0,0,1.9],[.22,.32,.48]);
+  gl.bindBuffer(gl.ARRAY_BUFFER,lineBuf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(L),gl.STATIC_DRAW);
+  lineN=L.length/9;
+  setMesh(fitMesh(rocketMesh()),false);
+}
+function setMesh(m,isStl){
+  mesh=m;meshIsSTL=isStl;
+  const inter=new Float32Array(m.n*9);
+  for(let i=0;i<m.n;i++){
+    inter.set(m.pos.subarray(i*6,i*6+6),i*9);
+    inter.set(m.col.subarray(i*3,i*3+3),i*9+6);
   }
-  return faces;
+  gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,inter,gl.STATIC_DRAW);
 }
-const ROCKET = buildRocket();
-
-/* ------------------------------------------------------------- rendering */
-const cv = $('cv'), ctx = cv.getContext('2d');
-let camYaw = -0.85, camPitch = 0.28, camDist = 5.4, W=0, H=0;
-
-function resize(){
-  const dpr = Math.min(devicePixelRatio||1, 2);
-  W = cv.clientWidth; H = cv.clientHeight;
-  cv.width = W*dpr; cv.height = H*dpr;
-  ctx.setTransform(dpr,0,0,dpr,0,0);
-}
-addEventListener('resize', resize);
-
-/* World -> camera. World Z is up; after yaw+pitch the camera looks along +depth. */
-function toCam(p){
-  const cy=Math.cos(camYaw), sy=Math.sin(camYaw);
-  const x =  p[0]*cy + p[1]*sy, y = -p[0]*sy + p[1]*cy;
-  const cp=Math.cos(camPitch), sp=Math.sin(camPitch);
-  return [y, -x*sp + p[2]*cp, x*cp + p[2]*sp];   // [right, up, depth]
-}
-function project(p){
-  const c = toCam(p);
-  const d = camDist - c[2];
-  const s = (Math.min(W,H)*0.42*3.2) / Math.max(d, 0.35);
-  return [W/2 + c[0]*s, H/2 - c[1]*s, c[2]];
-}
-
-function line(a,b,color,width){
-  const A=project(a), B=project(b);
-  ctx.strokeStyle=color; ctx.lineWidth=width||1;
-  ctx.beginPath(); ctx.moveTo(A[0],A[1]); ctx.lineTo(B[0],B[1]); ctx.stroke();
-}
-function label(p,text,color){
-  const P=project(p);
-  ctx.fillStyle=color; ctx.font='11px ui-monospace,monospace';
-  ctx.fillText(text, P[0]+5, P[1]-4);
-}
-function arrow(from,to,color,text){
-  line(from,to,color,2.5);
-  const A=project(from), B=project(to);
-  const ang=Math.atan2(B[1]-A[1], B[0]-A[0]), h=9;
-  ctx.fillStyle=color; ctx.beginPath();
-  ctx.moveTo(B[0],B[1]);
-  ctx.lineTo(B[0]-h*Math.cos(ang-0.4), B[1]-h*Math.sin(ang-0.4));
-  ctx.lineTo(B[0]-h*Math.cos(ang+0.4), B[1]-h*Math.sin(ang+0.4));
-  ctx.closePath(); ctx.fill();
-  if (text) label(to,text,color);
-}
-
-const LIGHT = (()=>{ const l=[0.45,0.7,0.75]; const n=Math.hypot(...l); return l.map(v=>v/n); })();
-
-function draw(){
-  ctx.clearRect(0,0,W,H);
-
-  // ground grid at world Z = 0
-  const G=2.2, step=G/5;
-  for (let i=-5;i<=5;i++){
-    const t=i*step, on = i===0;
-    line([t,-G,0],[t,G,0], on?'#2f3f52':'#1e2833', 1);
-    line([-G,t,0],[G,t,0], on?'#2f3f52':'#1e2833', 1);
-  }
-
-  // world axes: X red, Y green, Z blue (up)
-  arrow([0,0,0],[1.5,0,0],'#7a3b3b','X');
-  arrow([0,0,0],[0,1.5,0],'#3b7a4a','Y');
-  arrow([0,0,0],[0,0,1.7],'#3f6bb0','Z up');
-
-  // rocket, depth-sorted painter's algorithm
-  const q = S.q;
-  const polys = ROCKET.map(f => {
-    const wp = f.p.map(v => qRot(q,v));
-    const cp = wp.map(toCam);
-    const depth = cp.reduce((s,c)=>s+c[2],0)/cp.length;
-    const u=[wp[1][0]-wp[0][0], wp[1][1]-wp[0][1], wp[1][2]-wp[0][2]];
-    const v=[wp[2][0]-wp[0][0], wp[2][1]-wp[0][1], wp[2][2]-wp[0][2]];
-    let n=[u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]];
-    const nl=Math.hypot(...n)||1; n=n.map(x=>x/nl);
-    let lam = n[0]*LIGHT[0]+n[1]*LIGHT[1]+n[2]*LIGHT[2];
-    if (f.flat) lam = Math.abs(lam);        // fins are visible from both sides
-    const sh = 0.34 + 0.66*Math.max(0,lam);
-    return {wp, depth, fill:`rgb(${f.c.map(c=>Math.round(c*sh)).join(',')})`};
-  }).sort((a,b)=>a.depth-b.depth);
-
-  for (const p of polys){
-    ctx.beginPath();
-    p.wp.forEach((v,i)=>{ const P=project(v); i?ctx.lineTo(P[0],P[1]):ctx.moveTo(P[0],P[1]); });
-    ctx.closePath();
-    ctx.fillStyle=p.fill; ctx.fill();
-    ctx.strokeStyle='rgba(0,0,0,.35)'; ctx.lineWidth=.6; ctx.stroke();
-  }
-
-  // body axis triad, rotated with the vehicle
-  arrow([0,0,0], qRot(q,[1.75,0,0]), '#ff5d4d', 'nose +X');
-  line([0,0,0], qRot(q,[0,1.0,0]), '#4dd27a', 1.5);
-  line([0,0,0], qRot(q,[0,0,1.0]), '#5b8dd9', 1.5);
-
-  // measured specific-force vector, body frame -> world for display
-  if (S.accel){
-    const a = qRot(q, S.accel);
-    const m = Math.hypot(...a);
-    if (m > 0.05) arrow([0,0,0], a.map(v=>v*1.5/Math.max(m,1)), '#e8c14a', 'accel');
+function bindAttrs(stride){
+  for(const[name,size,off]of[['aP',3,0],['aN',3,3],['aC',3,6]]){
+    const l=gl.getAttribLocation(prog,name);
+    gl.enableVertexAttribArray(l);
+    gl.vertexAttribPointer(l,size,gl.FLOAT,false,stride*4,off*4);
   }
 }
+function drawGL(){
+  const dpr=Math.min(devicePixelRatio||1,2);
+  const w=glc.clientWidth,h=glc.clientHeight;
+  if(!w||!h)return;
+  if(glc.width!==w*dpr||glc.height!==h*dpr){glc.width=w*dpr;glc.height=h*dpr}
+  gl.viewport(0,0,glc.width,glc.height);
+  gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
 
-/* --------------------------------------------------------- mouse control */
+  const cp=Math.cos(cam.pitch),eye=[
+    cam.dist*cp*Math.cos(cam.yaw),cam.dist*cp*Math.sin(cam.yaw),cam.dist*Math.sin(cam.pitch)];
+  const V=M.look(eye,[0,0,.1],[0,0,1]);
+  const P=M.persp(.72,w/h,.1,60);
+  const VP=M.mul(P,V);
+  const uMVP=gl.getUniformLocation(prog,'uMVP'),uMV=gl.getUniformLocation(prog,'uMV'),
+        uNM=gl.getUniformLocation(prog,'uNM'),uF=gl.getUniformLocation(prog,'uFlat');
+
+  gl.bindBuffer(gl.ARRAY_BUFFER,lineBuf);bindAttrs(9);
+  gl.uniform1f(uF,1);gl.uniformMatrix4fv(uMVP,false,VP);
+  gl.uniformMatrix4fv(uMV,false,V);gl.uniformMatrix3fv(uNM,false,M.m3(V));
+  gl.drawArrays(gl.LINES,0,lineN);
+
+  const Rq=M.quat(S.q);
+  const A=meshIsSTL?alignMat(+$('#noseAxis').value):alignMat(0);
+  const model=M.mul(M.mul(Rq,A),M.mul(M.scale(mesh.scale),M.trans(mesh.centre.map(v=>-v))));
+  const MV=M.mul(V,model);
+  gl.bindBuffer(gl.ARRAY_BUFFER,buf);bindAttrs(9);
+  gl.uniform1f(uF,0);gl.uniformMatrix4fv(uMVP,false,M.mul(VP,model));
+  gl.uniformMatrix4fv(uMV,false,MV);gl.uniformMatrix3fv(uNM,false,M.m3(M.mul(Rq,A)));
+  gl.drawArrays(gl.TRIANGLES,0,mesh.n);
+}
 let drag=null;
-cv.addEventListener('pointerdown', e=>{ drag=[e.clientX,e.clientY]; cv.setPointerCapture(e.pointerId); });
-cv.addEventListener('pointerup',   e=>{ drag=null; });
-cv.addEventListener('pointermove', e=>{
-  if(!drag) return;
-  camYaw   -= (e.clientX-drag[0])*0.008;
-  camPitch  = Math.max(-1.45, Math.min(1.45, camPitch + (e.clientY-drag[1])*0.008));
-  drag=[e.clientX,e.clientY];
-});
-cv.addEventListener('wheel', e=>{
-  e.preventDefault();
-  camDist = Math.max(2.6, Math.min(12, camDist + e.deltaY*0.004));
-}, {passive:false});
+glc.addEventListener('pointerdown',e=>{drag=[e.clientX,e.clientY];glc.setPointerCapture(e.pointerId)});
+glc.addEventListener('pointerup',()=>drag=null);
+glc.addEventListener('pointermove',e=>{if(!drag)return;
+  cam.yaw-=(e.clientX-drag[0])*.008;
+  cam.pitch=Math.max(-1.45,Math.min(1.45,cam.pitch+(e.clientY-drag[1])*.008));
+  drag=[e.clientX,e.clientY]});
+glc.addEventListener('wheel',e=>{e.preventDefault();
+  cam.dist=Math.max(2.2,Math.min(16,cam.dist+e.deltaY*.004))},{passive:false});
 
-/* ------------------------------------------------------------- log panes */
-function push(pane, text, cls){
-  const el = $(pane);
-  const stick = el.scrollTop + el.clientHeight >= el.scrollHeight - 30;
-  const d = document.createElement('div');
-  if (cls) d.className = cls;
-  d.textContent = text;
-  el.appendChild(d);
-  while (el.childElementCount > 700) el.removeChild(el.firstChild);
-  if (stick) el.scrollTop = el.scrollHeight;
+/* ═══════════════════════════════════════════════════════════════════ 2D kit */
+function fit(c){
+  const dpr=Math.min(devicePixelRatio||1,2),w=c.clientWidth,h=c.clientHeight;
+  if(!w||!h)return null;
+  if(c.width!==w*dpr||c.height!==h*dpr){c.width=w*dpr;c.height=h*dpr}
+  const x=c.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,w,h);
+  return{x,w,h};
+}
+const MONO='11px ui-monospace,"SF Mono",Consolas,monospace';
+
+/* ────────────────────────────────────────────────── attitude indicator */
+function drawAI(){
+  const f=fit($('#gAi'));if(!f)return;const{x,w,h}=f;
+  const cx=w/2,cy=h/2+6,R=Math.min(w,h)/2-24;
+  /* Rocket telemetry gives tilt-from-vertical; a cockpit AI wants elevation
+     above the horizon. They are complements. Bank is roll about the nose. */
+  const pitch=Math.max(-90,Math.min(90,90-S.tilt)), bank=S.roll;
+  const PPD=R/48;
+  x.save();x.beginPath();x.arc(cx,cy,R,0,7);x.clip();
+  x.translate(cx,cy);x.rotate(-bank*Math.PI/180);x.translate(0,pitch*PPD);
+  x.fillStyle='#1d3c56';x.fillRect(-2*R,-4*R,4*R,4*R);
+  x.fillStyle='#3d3222';x.fillRect(-2*R,0,4*R,4*R);
+  x.strokeStyle='#c8d2da';x.lineWidth=1.2;
+  x.beginPath();x.moveTo(-2*R,0);x.lineTo(2*R,0);x.stroke();
+  x.strokeStyle='#7e8a94';x.lineWidth=1;x.font='9px ui-monospace,monospace';
+  x.fillStyle='#9aa5ae';x.textAlign='center';
+  for(let p=-80;p<=80;p+=10){ if(!p)continue;
+    const y=-p*PPD,ln=(p%20===0)?R*.42:R*.22;
+    x.beginPath();x.moveTo(-ln,y);x.lineTo(ln,y);x.stroke();
+    if(p%20===0){x.fillText(Math.abs(p),-ln-11,y+3);x.fillText(Math.abs(p),ln+11,y+3)} }
+  x.restore();
+  /* bank scale */
+  x.strokeStyle='#5b656e';x.lineWidth=1;
+  for(const a of[-60,-45,-30,-20,-10,0,10,20,30,45,60]){
+    const r=(a%30===0||a===0)?9:5,t=(-90+a)*Math.PI/180;
+    x.beginPath();
+    x.moveTo(cx+Math.cos(t)*R,cy+Math.sin(t)*R);
+    x.lineTo(cx+Math.cos(t)*(R-r),cy+Math.sin(t)*(R-r));x.stroke();
+  }
+  x.strokeStyle='#2b333c';x.lineWidth=1;x.beginPath();x.arc(cx,cy,R,0,7);x.stroke();
+  /* bank pointer */
+  const bt=(-90-bank)*Math.PI/180;
+  x.fillStyle='#4cc2ff';x.beginPath();
+  x.moveTo(cx+Math.cos(bt)*(R-10),cy+Math.sin(bt)*(R-10));
+  x.lineTo(cx+Math.cos(bt-.05)*(R-19),cy+Math.sin(bt-.05)*(R-19));
+  x.lineTo(cx+Math.cos(bt+.05)*(R-19),cy+Math.sin(bt+.05)*(R-19));
+  x.closePath();x.fill();
+  /* fixed vehicle reference */
+  x.strokeStyle='#e8eef3';x.lineWidth=2;x.beginPath();
+  x.moveTo(cx-R*.42,cy);x.lineTo(cx-R*.14,cy);x.moveTo(cx-R*.14,cy);x.lineTo(cx,cy+7);
+  x.lineTo(cx+R*.14,cy);x.moveTo(cx+R*.14,cy);x.lineTo(cx+R*.42,cy);x.stroke();
+  $('#rdAi').textContent=`${S.tilt.toFixed(0)}° tilt · ${S.roll.toFixed(0)}° roll`;
+}
+/* ─────────────────────────────────────────────────────────── round dial */
+function dial(cv,val,cfg){
+  const f=fit(cv);if(!f)return;const{x,w,h}=f;
+  const cx=w/2,cy=h/2+6,R=Math.min(w,h)/2-24;
+  x.strokeStyle='#232a31';x.lineWidth=1;x.beginPath();x.arc(cx,cy,R,0,7);x.stroke();
+  x.font='9.5px ui-monospace,monospace';x.textAlign='center';x.textBaseline='middle';
+  for(const t of cfg.ticks){
+    const a=cfg.ang(t.v)-Math.PI/2, maj=t.label!==undefined;
+    x.strokeStyle=maj?'#78838d':'#3a434c';x.lineWidth=maj?1.4:1;
+    const r0=R-(maj?11:6);
+    x.beginPath();x.moveTo(cx+Math.cos(a)*r0,cy+Math.sin(a)*r0);
+    x.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R);x.stroke();
+    if(maj){x.fillStyle='#8b949c';
+      x.fillText(t.label,cx+Math.cos(a)*(R-23),cy+Math.sin(a)*(R-23))}
+  }
+  const a=cfg.ang(cfg.clamp(val))-Math.PI/2;
+  x.strokeStyle=cfg.color;x.lineWidth=2.2;x.lineCap='round';
+  x.beginPath();x.moveTo(cx-Math.cos(a)*R*.13,cy-Math.sin(a)*R*.13);
+  x.lineTo(cx+Math.cos(a)*(R-15),cy+Math.sin(a)*(R-15));x.stroke();
+  x.fillStyle='#0b0d10';x.beginPath();x.arc(cx,cy,4.5,0,7);x.fill();
+  x.strokeStyle=cfg.color;x.lineWidth=1.2;x.beginPath();x.arc(cx,cy,4.5,0,7);x.stroke();
+}
+function drawAlt(){
+  const v=S.alt==null?0:S.alt;
+  const ticks=[];for(let i=0;i<10;i++)ticks.push({v:i*100,label:i});
+  for(let i=0;i<50;i++)if(i%5)ticks.push({v:i*20});
+  dial($('#gAlt'),((v%1000)+1000)%1000,{
+    ticks,ang:t=>t/1000*2*Math.PI,clamp:t=>t,color:'#4cc2ff'});
+  $('#rdAlt').textContent=S.alt==null?'—':S.alt.toFixed(1)+' m';
+}
+/* Compressed VSI scale — linear would bury everything below 20 m/s. */
+const vsiAng=v=>{const s=Math.sign(v),m=Math.min(Math.abs(v),200);
+  return s*Math.pow(m/200,.55)*Math.PI*.82};
+function drawVs(){
+  const v=S.vv==null?0:S.vv;
+  const ticks=[];
+  for(const t of[0,5,20,50,100,200]){
+    ticks.push({v:t,label:t});if(t)ticks.push({v:-t,label:t})}
+  for(const t of[2,10,35,75,150]){ticks.push({v:t});ticks.push({v:-t})}
+  dial($('#gVs'),v,{ticks,ang:vsiAng,clamp:t=>t,
+    color:v>1?'#4cc98a':v<-1?'#e0a63c':'#8b949c'});
+  $('#rdVs').textContent=S.vv==null?'—':S.vv.toFixed(1)+' m/s';
 }
 
-/* --------------------------------------------------------------- parsing */
-const RE_EVENT = /^#\s+(\d+)\s+([IWE])\s+(\S+)\s+v=(-?\d+)\s+n=(\d+)\s+first=(\d+)(\s+\[replay\])?/;
-const RE_STATS = /^#\s+(\d+)\s+I\s+STATS\s+(.+)$/;
+/* ───────────────────────────────────────────────────────────── charts */
+function niceStep(r,target){
+  const raw=r/target,e=Math.pow(10,Math.floor(Math.log10(raw))),m=raw/e;
+  return (m<1.5?1:m<3?2:m<7?5:10)*e;
+}
+function chart(cv,series,opt){
+  const f=fit(cv);if(!f)return;const{x,w,h}=f;
+  const L=52,Rp=14,T=26,B=20, pw=w-L-Rp, ph=h-T-B;
+  if(pw<10||ph<10)return;
+  const win=+$('#win').value;
+  const now=H.t.length?H.t[H.t.length-1]:0;
+  const t0=win?Math.max(0,now-win):(H.t[0]||0), t1=Math.max(now,t0+1);
 
-const EV_UNITS = {
-  IMU_DT_CLAMP:  v => `${(v/1000).toFixed(2)} ms rejected sample interval`,
-  LOOP_OVERRUN:  v => `${(v/1000).toFixed(2)} ms of loop work`,
-  MAG_REJECT:    v => `|B| = ${(v/10).toFixed(1)} uT (outside the validity gate)`,
-  BARO_PAD_REF:  v => `pad pressure ${(v/100).toFixed(2)} hPa`,
-  GPS_PAD_REF:   v => `pad altitude ${v} m MSL`,
-  GPS_NO_STREAM: v => `${v} non-UBX bytes discarded`,
-  GPS_FIX_GAINED:v => `${v} satellites`,
-  GPS_FIX_LOST:  v => `fell back to fix type ${v}`,
-  IMU_TIMEOUT:   v => `${v} consecutive`,
-  BOOT:          v => 'reset cause: ' + (['pin','power-on','software','IWDG','WWDG','brownout','low-power']
-                        .filter((_,i)=>v & (1<<i)).join('+') || 'unknown')
+  let lo=Infinity,hi=-Infinity,any=false;
+  for(const s of series)for(let i=0;i<H.t.length;i++){
+    if(H.t[i]<t0)continue;const v=s.d[i];
+    if(v==null||!isFinite(v))continue;
+    lo=Math.min(lo,v);hi=Math.max(hi,v);any=true}
+  if(!any){lo=opt.lo??0;hi=opt.hi??1}
+  if(hi-lo<(opt.min??1)){const c=(hi+lo)/2,m=(opt.min??1)/2;lo=c-m;hi=c+m}
+  const padv=(hi-lo)*.10;lo-=padv;hi+=padv;
+
+  const X=t=>L+(t-t0)/(t1-t0)*pw, Y=v=>T+ph-(v-lo)/(hi-lo)*ph;
+
+  x.strokeStyle='#171c22';x.lineWidth=1;
+  x.font='9.5px ui-monospace,monospace';x.fillStyle='#565f68';
+  x.textAlign='right';x.textBaseline='middle';
+  const gs=niceStep(hi-lo,4);
+  for(let v=Math.ceil(lo/gs)*gs;v<=hi;v+=gs){
+    const y=Math.round(Y(v))+.5;
+    x.beginPath();x.moveTo(L,y);x.lineTo(L+pw,y);x.stroke();
+    x.fillText(Math.abs(v)<1e-9?'0':(gs<1?v.toFixed(1):v.toFixed(0)),L-8,y)}
+  const ts=niceStep(t1-t0,5);
+  x.textAlign='center';x.textBaseline='top';
+  for(let t=Math.ceil(t0/ts)*ts;t<=t1;t+=ts){
+    const px=Math.round(X(t))+.5;
+    x.beginPath();x.moveTo(px,T);x.lineTo(px,T+ph);x.stroke();
+    x.fillText(t.toFixed(ts<1?1:0)+'s',px,T+ph+5)}
+  x.strokeStyle='#242b32';x.beginPath();
+  x.moveTo(L,T);x.lineTo(L,T+ph);x.lineTo(L+pw,T+ph);x.stroke();
+
+  /* decimate to at most ~2 points per device pixel column */
+  const step=Math.max(1,Math.floor(H.t.length/(pw*2)));
+  for(const s of series){
+    x.strokeStyle=s.c;x.lineWidth=1.35;x.beginPath();let pen=false;
+    for(let i=0;i<H.t.length;i+=step){
+      if(H.t[i]<t0)continue;const v=s.d[i];
+      if(v==null||!isFinite(v)){pen=false;continue}
+      const px=X(H.t[i]),py=Y(v);
+      pen?x.lineTo(px,py):x.moveTo(px,py);pen=true}
+    x.stroke();
+  }
+}
+
+/* ──────────────────────────────────────────────────────── ground track */
+function drawMap(){
+  const f=fit($('#map'));if(!f)return;const{x,w,h}=f;
+  const cx=w/2,cy=h/2,R=Math.min(w,h)/2-34;
+  let span=60;
+  if(track.length){let mx=0;for(const p of track)mx=Math.max(mx,Math.hypot(p[0],p[1]));
+    span=Math.max(60,mx*1.25)}
+  const sc=R/span, PX=(e,n)=>[cx+e*sc,cy-n*sc];
+
+  const ringStep=niceStep(span,3);
+  x.font='9.5px ui-monospace,monospace';x.textAlign='center';x.textBaseline='middle';
+  for(let r=ringStep;r<=span*1.02;r+=ringStep){
+    x.strokeStyle='#171c22';x.lineWidth=1;
+    x.beginPath();x.arc(cx,cy,r*sc,0,7);x.stroke();
+    x.fillStyle='#3f474f';x.fillText(r>=1000?(r/1000).toFixed(1)+'k':r+'m',cx,cy-r*sc-8)}
+  x.strokeStyle='#1c2229';x.beginPath();
+  x.moveTo(cx-R,cy);x.lineTo(cx+R,cy);x.moveTo(cx,cy-R);x.lineTo(cx,cy+R);x.stroke();
+  x.fillStyle='#565f68';x.font='10px ui-monospace,monospace';
+  x.fillText('N',cx,cy-R-16);x.fillText('S',cx,cy+R+16);
+  x.fillText('E',cx+R+14,cy);x.fillText('W',cx-R-14,cy);
+
+  if(track.length>1){
+    x.strokeStyle='#2f6f8f';x.lineWidth=1.3;x.beginPath();
+    track.forEach((p,i)=>{const q=PX(p[0],p[1]);i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1])});
+    x.stroke();
+  }
+  x.strokeStyle='#7e8a94';x.lineWidth=1.2;
+  x.beginPath();x.moveTo(cx-6,cy);x.lineTo(cx+6,cy);
+  x.moveTo(cx,cy-6);x.lineTo(cx,cy+6);x.stroke();
+  if(track.length){
+    const p=track[track.length-1],q=PX(p[0],p[1]);
+    x.fillStyle='#4cc2ff';x.beginPath();x.arc(q[0],q[1],4,0,7);x.fill();
+    x.strokeStyle='rgba(76,194,255,.28)';x.lineWidth=1;
+    x.beginPath();x.arc(q[0],q[1],9,0,7);x.stroke();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════ parsing */
+const RE_EV=/^#\s+(\d+)\s+([IWE])\s+(\S+)\s+v=(-?\d+)\s+n=(\d+)\s+first=(\d+)/;
+const RE_ST=/^#\s+(\d+)\s+I\s+STATS\s+(.+)$/;
+const NOTE={
+  IMU_DT_CLAMP:v=>`${(v/1000).toFixed(2)} ms sample interval rejected — filter substituted nominal dt`,
+  LOOP_OVERRUN:v=>`${(v/1000).toFixed(2)} ms of loop work — an IMU sample was lost`,
+  MAG_REJECT:v=>`|B| = ${(v/10).toFixed(1)} µT, outside the validity gate`,
+  BARO_PAD_REF:v=>`pad pressure ${(v/100).toFixed(2)} hPa`,
+  GPS_PAD_REF:v=>`pad altitude ${v} m MSL`,
+  GPS_NO_STREAM:v=>`${v} non-UBX bytes discarded — receiver talking, but not UBX`,
+  GPS_FIX_GAINED:v=>`${v} satellites`,
+  GPS_FIX_LOST:v=>`fell back to fix type ${v}`,
+  GPS_INIT_FAIL:v=>`init step ${v} failed`,
+  IMU_TIMEOUT:v=>`${v} consecutive data-ready timeouts`,
+  GYRO_CAL_OK:v=>`stationary after ${v} attempt${v>1?'s':''}`,
+  TELEM_DROP:v=>`${v} lines dropped — port slower than the telemetry rate`,
+  BOOT:v=>'reset cause: '+(['pin','power-on','software','IWDG','WWDG','brownout','low-power']
+        .filter((_,i)=>v&(1<<i)).join(' + ')||'unknown')
 };
 
-function handleLine(raw){
-  const s = raw.trim();
-  if (!s) return;
-  push('raw', s);
+function con(text,cls){
+  const el=$('#conout'),stick=el.scrollTop+el.clientHeight>=el.scrollHeight-24;
+  const d=document.createElement('div');if(cls)d.className=cls;d.textContent=text;
+  el.appendChild(d);
+  while(el.childElementCount>500)el.removeChild(el.firstChild);
+  if(stick)el.scrollTop=el.scrollHeight;
+}
 
-  if (s[0] === '#'){
-    let m = s.match(RE_STATS);
-    if (m){ push('log', `[${(+m[1]/1000).toFixed(1)}s] STATS  ${m[2]}`, 'S'); return; }
-    m = s.match(RE_EVENT);
-    if (m){
-      const [,ms,sev,name,val,n,first,replay] = m;
-      const note = EV_UNITS[name] ? '  <- ' + EV_UNITS[name](+val) : '';
-      push('log',
-        `[${(+ms/1000).toFixed(1)}s] ${name}  v=${val} n=${n} first=${(+first/1000).toFixed(1)}s`
-        + (replay?' (replay)':'') + note, sev);
-      return;
+function onLine(raw){
+  const s=raw.trim();if(!s)return;
+  con(s,s[0]==='#'?'m':null);
+
+  if(s[0]==='#'){
+    let m=s.match(RE_ST);
+    if(m){$('#statsLine').textContent=m[2];return}
+    m=s.match(RE_EV);
+    if(m){
+      const[,ms,sev,name,val,n,first]=m;
+      events.set(name,{sev,name,val:+val,n:+n,first:+first,last:+ms});
+      renderEvents();
     }
-    push('log', s.replace(/^#\s*/,''), 'I');
     return;
   }
+  const f=s.split(/\s+/),v=f.map(Number);
+  if(v.some(Number.isNaN))return;
+  const t=(performance.now()-S.t0)/1000;
 
-  const f = s.split(/\s+/);
-  const num = f.map(Number);
-  if (num.some(Number.isNaN)) return;
-
-  if (f.length === 15){
-    S.tilt=num[1]; S.roll=num[2]; S.azi=num[3];
-    S.alt=num[4]; S.vv=num[5]; S.aup=num[6];
-    S.lat=num[7]; S.lon=num[8]; S.fix=num[9]; S.nsat=num[10];
-    S.loopUs=num[11]; S.ovr=num[12]; S.tmo=num[13];
-    S.faults=parseInt(f[14],16)||0;
-    S.q = qFromAngles(S.tilt,S.roll,S.azi);
-    S.source='flight'; S.rows++;
-    S.csv.push(f.join(','));
-  } else if (f.length === 8){
-    S.accel=[num[1],num[2],num[3]]; S.gyro=[num[4],num[5],num[6]]; S.temp=num[7];
-    if (S.source!=='flight'){
-      const q = qFromAccel(S.accel);
-      if (q){ S.q=q; S.source='accel'; }
+  if(f.length===15){
+    S.tilt=v[1];S.roll=v[2];S.azi=v[3];S.alt=v[4];S.vv=v[5];S.aup=v[6];
+    S.lat=v[7];S.lon=v[8];S.fix=v[9];S.nsat=v[10];
+    S.loopUs=v[11];S.ovr=v[12];S.tmo=v[13];S.faults=parseInt(f[14],16)||0;
+    S.q=qFromAngles(S.tilt,S.roll,S.azi);S.src='flight';S.rows++;
+    if(S.alt>S.apogee)S.apogee=S.alt;
+    if(S.vv>S.maxUp)S.maxUp=S.vv;
+    if(S.vv<S.maxDn)S.maxDn=S.vv;
+    if(Math.abs(S.aup)>Math.abs(S.maxA))S.maxA=S.aup;
+    if(S.fix>=3&&S.lat){
+      if(!pad)pad={lat:S.lat,lon:S.lon};
+      const n=(S.lat-pad.lat)*111320,
+            e=(S.lon-pad.lon)*111320*Math.cos(pad.lat*Math.PI/180);
+      const l=track[track.length-1];
+      if(!l||Math.hypot(e-l[0],n-l[1])>.4)track.push([e,n]);
     }
-    S.rows++;
-  } else if (f.length === 5){
-    S.mag=[num[1],num[2],num[3]]; S.rows++;
-  }
+    csv.push(f.join(','));
+    hist(t);
+  }else if(f.length===8){
+    S.accel=[v[1],v[2],v[3]];S.gyro=[v[4],v[5],v[6]];S.temp=v[7];S.rows++;
+    if(S.src!=='flight'){const q=qFromAccel(S.accel);
+      if(q){S.q=q;S.src='accel';S.tilt=Math.acos(Math.max(-1,Math.min(1,noseOf(q)[2])))*180/Math.PI;
+        S.roll=0;S.azi=0}}
+    hist(t);
+  }else if(f.length===5){S.mag=[v[1],v[2],v[3]];S.rows++}
 }
 
-/* --------------------------------------------------------------- readout */
-const fmt = (v,d) => (v===null||v===undefined) ? '—' : v.toFixed(d===undefined?1:d);
-const vec = (v,d) => v ? v.map(x=>x.toFixed(d)).join(' ') : '—';
-
-function refresh(){
-  const now = performance.now(), dt = (now-S.tMark)/1000;
-  if (dt >= 1){
-    S.rate    = (S.rows - S.rowsAtMark)/dt;
-    S.ovrRate = (S.ovr  - S.ovrAtMark )/dt;
-    S.rowsAtMark = S.rows; S.ovrAtMark = S.ovr; S.tMark = now;
-  }
-
-  $('vTilt').textContent = fmt(S.tilt);
-  $('vRoll').textContent = fmt(S.roll);
-  $('vAzi').textContent  = fmt(S.azi,0);
-  $('vAlt').textContent  = fmt(S.alt,2);
-  $('vVv').textContent   = fmt(S.vv,2);
-  $('vAup').textContent  = fmt(S.aup,2);
-  $('vFix').textContent  = `${S.fix} / ${S.nsat}`;
-  $('vLat').textContent  = S.lat ? S.lat.toFixed(5) : '—';
-  $('vLon').textContent  = S.lon ? S.lon.toFixed(5) : '—';
-
-  $('grpRaw').style.display = S.accel ? '' : 'none';
-  if (S.accel){
-    $('vAcc').textContent  = vec(S.accel,3);
-    $('vAmag').textContent = Math.hypot(...S.accel).toFixed(3);
-    $('vGyr').textContent  = vec(S.gyro,2);
-    $('vTemp').textContent = fmt(S.temp);
-  }
-  $('grpMag').style.display = S.mag ? '' : 'none';
-  if (S.mag){
-    $('vMag').textContent  = vec(S.mag,1);
-    $('vBmag').textContent = Math.hypot(...S.mag).toFixed(1);
-  }
-
-  $('vRate').textContent   = S.rate.toFixed(1);
-  $('vLoopHz').textContent = (S.rate*8).toFixed(0);   // TELEM_DECIMATION = 8
-  $('vLoopUs').textContent = S.loopUs;
-  $('vOvr').textContent    = S.ovr;
-  $('vOvrRate').textContent= S.ovrRate.toFixed(2);
-  $('vTmo').textContent    = S.tmo;
-
-  $('srcTag').textContent = {
-    none:'no data', flight:'orientation: filter quaternion (flight rows)',
-    accel:'orientation: gravity only (raw IMU) — roll unobservable',
-    demo:'orientation: DEMO — synthetic motion, not the vehicle'
-  }[S.source];
-
-  const fx = $('faults');
-  if (fx.childElementCount !== FAULT_BITS.length){
-    fx.innerHTML = '';
-    FAULT_BITS.forEach(([,name])=>{
-      const c=document.createElement('span'); c.className='chip'; c.textContent=name; fx.appendChild(c);
-    });
-  }
-  FAULT_BITS.forEach(([bit,,sev],i)=>{
-    fx.children[i].className = 'chip' + ((S.faults & bit) ? ' lit '+sev : '');
-  });
+function renderEvents(){
+  const tb=$('#evb');
+  if(!events.size){tb.innerHTML='<tr><td colspan="6" class="dim">no events yet</td></tr>';return}
+  const rows=[...events.values()].sort((a,b)=>({E:0,W:1,I:2})[a.sev]-({E:0,W:1,I:2})[b.sev]||b.n-a.n);
+  tb.innerHTML=rows.map(e=>`<tr class="${e.sev}">
+    <td class="dim">${(e.first/1000).toFixed(1)}s</td>
+    <td class="dim">${(e.last/1000).toFixed(1)}s</td>
+    <td class="n">${e.name}</td><td>${e.n}</td><td>${e.val}</td>
+    <td class="note">${NOTE[e.name]?NOTE[e.name](e.val):''}</td></tr>`).join('');
 }
 
-function frame(){ if (demoOn) tickDemo(); draw(); refresh(); requestAnimationFrame(frame); }
+/* ══════════════════════════════════════════════════════════════ readouts */
+const nf=(v,d=1)=>v==null||!isFinite(v)?'—':v.toFixed(d);
+const vf=(v,d)=>v?v.map(a=>a.toFixed(d)).join('  '):'—';
+let chipsBuilt=false;
 
-/* ---------------------------------------------------------- web serial */
-let port=null, reader=null, writer=null, readLoop=null;
+function readouts(){
+  const now=performance.now(),dt=(now-S.tMark)/1000;
+  if(dt>=1){S.rate=(S.rows-S.rowsMark)/dt;S.ovrRate=(S.ovr-S.ovrMark)/dt;
+    S.rowsMark=S.rows;S.ovrMark=S.ovr;S.tMark=now}
 
+  $('#vTilt').textContent=nf(S.tilt);$('#vRoll').textContent=nf(S.roll);
+  $('#vAlt').textContent=nf(S.alt,1);$('#vVv').textContent=nf(S.vv,1);
+  $('#vAzi').textContent=nf(S.azi,0);$('#vAup').textContent=nf(S.aup,2);
+  $('#vApo').textContent=isFinite(S.apogee)?S.apogee.toFixed(1):'—';
+  $('#vMaxV').textContent=isFinite(S.maxUp)?S.maxUp.toFixed(1):'—';
+
+  $('#bRaw').hidden=!S.accel;
+  if(S.accel){$('#vAcc').textContent=vf(S.accel,3);
+    $('#vAmag').textContent=Math.hypot(...S.accel).toFixed(3);
+    $('#vGyr').textContent=vf(S.gyro,1);$('#vTemp').textContent=nf(S.temp)}
+  $('#bMag').hidden=!S.mag;
+  if(S.mag){$('#vMg').textContent=vf(S.mag,1);
+    $('#vBm').textContent=Math.hypot(...S.mag).toFixed(1)}
+
+  $('#srcTag').textContent={none:'awaiting telemetry',
+    flight:'orientation · filter quaternion',
+    accel:'orientation · gravity only, roll unobservable',
+    demo:'orientation · DEMO, synthetic flight'}[S.src];
+  $('#srcTag').className='tag'+(S.src==='demo'?' warn':'');
+
+  if(!chipsBuilt){
+    for(const id of['#chips','#chips2'])
+      $(id).innerHTML=FAULTS.map(([,n])=>`<span class="chip">${n}</span>`).join('');
+    chipsBuilt=true;
+  }
+  for(const id of['#chips','#chips2'])
+    FAULTS.forEach(([b,,s],i)=>{
+      $(id).children[i].className='chip'+((S.faults&b)?' '+s:'')});
+
+  $('#vLat').textContent=S.lat?S.lat.toFixed(6):'—';
+  $('#vLon').textContent=S.lon?S.lon.toFixed(6):'—';
+  $('#vFix').textContent=['none','dead-reckon','2D','3D','GNSS+DR','time'][S.fix]||S.fix;
+  $('#vSat').textContent=S.nsat;
+  $('#vPLat').textContent=pad?pad.lat.toFixed(6):'—';
+  $('#vPLon').textContent=pad?pad.lon.toFixed(6):'—';
+  $('#vPts').textContent=track.length;
+  if(track.length){
+    const p=track[track.length-1],r=Math.hypot(p[0],p[1]);
+    let b=Math.atan2(p[0],p[1])*180/Math.PI;if(b<0)b+=360;
+    $('#vRange').textContent=r.toFixed(0);$('#vBrg').textContent=b.toFixed(0);
+    $('#mapTag').textContent=`${track.length} points · ${r.toFixed(0)} m from pad`;
+  }else $('#mapTag').textContent=S.fix>=3?'fix, waiting for pad reference':'no 3D fix';
+  $('#mapLink').href=S.lat?`https://www.openstreetmap.org/?mlat=${S.lat}&mlon=${S.lon}#map=17/${S.lat}/${S.lon}`:'#';
+
+  $('#kAlt').textContent=nf(S.alt,2);$('#kVv').textContent=nf(S.vv,2);
+  $('#kAup').textContent=nf(S.aup,2);
+  $('#kApo').textContent=isFinite(S.apogee)?S.apogee.toFixed(1):'—';
+  $('#kMaxU').textContent=isFinite(S.maxUp)?S.maxUp.toFixed(1):'—';
+  $('#kMaxD').textContent=isFinite(S.maxDn)?S.maxDn.toFixed(1):'—';
+  $('#kMaxA').textContent=S.maxA.toFixed(1);$('#kN').textContent=H.t.length;
+
+  $('#aTilt').textContent=nf(S.tilt);$('#aRoll').textContent=nf(S.roll);
+  $('#aAzi').textContent=nf(S.azi,0);
+  ['qw','qx','qy','qz'].forEach((id,i)=>$('#'+id).textContent=S.q[i].toFixed(4));
+  const n=noseOf(S.q);
+  $('#nx').textContent=n[0].toFixed(4);$('#ny').textContent=n[1].toFixed(4);
+  $('#nz').textContent=n[2].toFixed(4);
+
+  $('#hRate').textContent=S.rate.toFixed(1);
+  $('#hHz').textContent=(S.rate*8).toFixed(0);
+  $('#hUs').textContent=S.loopUs;$('#hOvr').textContent=S.ovr;
+  $('#hOvrR').textContent=S.ovrRate.toFixed(2);$('#hTmo').textContent=S.tmo;
+}
+
+/* ═══════════════════════════════════════════════════════════════════ loop */
+let tab='flight';
+function frame(){
+  if(demo)tickDemo();
+  readouts();
+  if(tab==='flight'){drawGL();drawAI();drawAlt();drawVs()}
+  else if(tab==='nav')drawMap();
+  else if(tab==='kalman'){
+    chart($('#cAlt'),[{d:H.alt,c:'#4cc2ff'}],{min:5});
+    chart($('#cVv'),[{d:H.vv,c:'#4cc98a'}],{min:2});
+    chart($('#cAup'),[{d:H.aup,c:'#e0a63c'}],{min:2});
+  }else if(tab==='att'){
+    chart($('#cTilt'),[{d:H.tilt,c:'#4cc2ff'}],{min:5});
+    chart($('#cRoll'),[{d:H.roll,c:'#4cc98a'},{d:H.azi,c:'#b98ce0'}],{min:20});
+    chart($('#cGyr'),[{d:H.gp,c:'#e5605e'},{d:H.gq,c:'#4cc98a'},{d:H.gr,c:'#4cc2ff'}],{min:10});
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ══════════════════════════════════════════════════════════════════ serial */
+let port=null,reader=null,writer=null;
 async function connect(){
-  try {
-    port = await navigator.serial.requestPort();
-    await port.open({ baudRate: +$('baud').value });
-  } catch(e){
-    if (e.name !== 'NotFoundError') push('log', 'connect failed: '+e.message, 'E');
-    return;
-  }
-  demoOn = false;
-  $('dot').classList.add('on');
-  $('btnConnect').textContent = 'Disconnect';
-  $('btnDump').disabled = $('btnHdr').disabled = false;
-  push('log', 'connected @ ' + $('baud').value + ' baud', 'S');
+  try{ port=await navigator.serial.requestPort();
+       await port.open({baudRate:+$('#baud').value}); }
+  catch(e){ if(e.name!=='NotFoundError')con('connect failed: '+e.message,'e'); port=null; return }
+  demo=false;$('#bDemo').classList.remove('on');
+  $('#led').classList.add('up');$('#linktxt').textContent=$('#baud').value+' 8N1';
+  $('#bConnect').textContent='Disconnect';
+  $('#bDump').disabled=$('#bHdr').disabled=false;
+  con('— connected —','s');
+  try{writer=port.writable.getWriter()}catch(e){writer=null}
 
-  try { writer = port.writable.getWriter(); } catch(e){ writer = null; }
-
-  const dec = new TextDecoderStream();
-  readLoop = port.readable.pipeTo(dec.writable).catch(()=>{});
-  reader = dec.readable.getReader();
-
-  let buf = '';
-  try {
+  const dec=new TextDecoderStream();
+  port.readable.pipeTo(dec.writable).catch(()=>{});
+  reader=dec.readable.getReader();
+  let b='';
+  try{
     for(;;){
-      const {value, done} = await reader.read();
-      if (done) break;
-      buf += value;
-      const parts = buf.split('\n');
-      buf = parts.pop();
-      for (const p of parts) handleLine(p);
-      if (buf.length > 8192) buf = '';         // never let a runaway line grow
+      const{value,done}=await reader.read();
+      if(done)break;
+      b+=value;
+      const p=b.split('\n');b=p.pop();
+      for(const l of p)onLine(l);
+      if(b.length>8192)b='';
     }
-  } catch(e){
-    push('log', 'read error: '+e.message, 'E');
-  }
+  }catch(e){con('read error: '+e.message,'e')}
   await disconnect();
 }
-
 async function disconnect(){
-  try { if (reader) { await reader.cancel(); reader.releaseLock(); } } catch(e){}
-  try { if (writer) { writer.releaseLock(); } } catch(e){}
-  try { if (port) await port.close(); } catch(e){}
-  reader = writer = port = null;
-  $('dot').classList.remove('on');
-  $('btnConnect').textContent = 'Connect';
-  $('btnDump').disabled = $('btnHdr').disabled = true;
+  try{if(reader){await reader.cancel();reader.releaseLock()}}catch(e){}
+  try{if(writer)writer.releaseLock()}catch(e){}
+  try{if(port)await port.close()}catch(e){}
+  port=reader=writer=null;
+  $('#led').classList.remove('up');$('#linktxt').textContent='offline';
+  $('#bConnect').textContent='Connect';
+  $('#bDump').disabled=$('#bHdr').disabled=true;
+  con('— disconnected —','s');
 }
+const send=async ch=>{ if(writer) try{await writer.write(new TextEncoder().encode(ch))}
+                       catch(e){con('write failed: '+e.message,'e')} };
 
-async function send(ch){
-  if (!writer) return;
-  try { await writer.write(new TextEncoder().encode(ch)); }
-  catch(e){ push('log','write failed: '+e.message,'E'); }
-}
-
-/* -------------------------------------------------------------- demo */
-let demoOn=false, demoT=0;
+/* ════════════════════════════════════════════════════════════════════ demo */
+let demo=false,D=null;
+function resetDemo(){D={t:0,alt:0,vv:0,tilt:2,roll:0,rr:0,azi:35,
+  lat:40.116400,lon:-88.243400,chute:false}}
 function tickDemo(){
-  demoT += 0.016;
-  S.tilt = 42*Math.sin(demoT*0.35) + 42;
-  S.roll = ((demoT*70 + 180) % 360) - 180;
-  S.azi  = ((demoT*23 + 180) % 360) - 180;
-  S.q = qFromAngles(S.tilt, S.roll, S.azi);
-  S.alt = 120*Math.max(0,Math.sin(demoT*0.2));
-  S.vv  = 24*Math.cos(demoT*0.2);
-  S.aup = 3*Math.sin(demoT*0.9);
-  S.accel = qRot([S.q[0],-S.q[1],-S.q[2],-S.q[3]], [0,0,1]);   // gravity in body
-  S.gyro = [70, 12*Math.cos(demoT), 8*Math.sin(demoT*1.3)];
-  S.temp = 27.4; S.source='demo';
-  /* Deliberately does NOT touch S.rows: loop health must only ever reflect
-     real serial traffic, never the browser's frame rate. */
+  const dt=1/60;D.t+=dt;
+  let a;
+  if(D.t<1) a=0;
+  else if(D.t<3.4){a=76;D.rr+=dt*140;D.tilt+=dt*1.6}          // boost
+  else if(!D.chute){a=-9.81-0.0016*D.vv*Math.abs(D.vv);D.rr*=(1-dt*.5);D.tilt+=dt*7}
+  else {a=(-8-D.vv)*1.4;D.rr=28}                               // under canopy
+  D.vv+=a*dt;D.alt=Math.max(0,D.alt+D.vv*dt);
+  if(!D.chute&&D.vv<0&&D.t>4){D.chute=true}
+  if(D.chute)D.tilt+=(148-D.tilt)*dt*.5;
+  if(D.alt<=0&&D.t>6){resetDemo();return}
+  D.roll=((D.roll+D.rr*dt+180)%360)-180;
+  D.azi=((D.azi+dt*4+180)%360)-180;
+  D.lat+=dt*2.3e-6;D.lon+=dt*5.1e-6;
+
+  S.tilt=D.tilt;S.roll=D.roll;S.azi=D.azi;S.alt=D.alt;S.vv=D.vv;S.aup=a;
+  S.q=qFromAngles(S.tilt,S.roll,S.azi);
+  S.accel=qRot([S.q[0],-S.q[1],-S.q[2],-S.q[3]],[0,0,(a+9.81)/9.81]);
+  S.gyro=[D.rr,7*Math.sin(D.t*1.7),5*Math.cos(D.t*2.3)];
+  S.temp=26.8;S.lat=D.lat;S.lon=D.lon;S.fix=3;S.nsat=11;S.src='demo';
+  if(S.alt>S.apogee)S.apogee=S.alt;
+  if(S.vv>S.maxUp)S.maxUp=S.vv;
+  if(S.vv<S.maxDn)S.maxDn=S.vv;
+  if(Math.abs(a)>Math.abs(S.maxA))S.maxA=a;
+  if(!pad)pad={lat:D.lat,lon:D.lon};
+  const n=(D.lat-pad.lat)*111320,e=(D.lon-pad.lon)*111320*Math.cos(pad.lat*Math.PI/180);
+  const l=track[track.length-1];
+  if(!l||Math.hypot(e-l[0],n-l[1])>.4)track.push([e,n]);
+  /* deliberately does not touch S.rows — loop health must only ever
+     reflect real serial traffic, never the browser frame rate */
+  hist((performance.now()-S.t0)/1000);
 }
 
-/* ------------------------------------------------------------- wiring */
-$('btnConnect').onclick = () => port ? disconnect() : connect();
-$('btnDump').onclick = () => send('l');
-$('btnHdr').onclick  = () => send('h');
-$('btnDemo').onclick = () => {
-  demoOn = !demoOn;
-  if (!demoOn){ S.source = port ? 'flight' : 'none'; }
-  push('log', demoOn ? 'demo mode ON — synthetic data' : 'demo mode off', 'S');
-};
-$('btnClear').onclick = () => { $('log').innerHTML=''; $('raw').innerHTML=''; S.csv.length=0; };
-$('btnCsv').onclick = () => {
-  if (!S.csv.length){ push('log','no flight rows captured yet','W'); return; }
-  const hdr = 'ms,tilt_deg,roll_deg,azi_deg,alt_m,vv_mps,aup_mps2,lat,lon,fix,nsat,loop_us,ovr,tmo,flt';
-  const url = URL.createObjectURL(new Blob([hdr+'\n'+S.csv.join('\n')], {type:'text/csv'}));
-  const a = document.createElement('a');
-  a.href = url; a.download = 'kittyv1-' + Date.now() + '.csv'; a.click();
-  URL.revokeObjectURL(url);
-};
-document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
-  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('sel', x===t));
-  document.querySelectorAll('.pane').forEach(p=>p.classList.toggle('sel', p.id===t.dataset.pane));
+/* ═════════════════════════════════════════════════════════════════ wiring */
+$$('nav button').forEach(b=>b.onclick=()=>{
+  $$('nav button').forEach(o=>o.classList.toggle('sel',o===b));
+  $$('.tab').forEach(s=>s.classList.toggle('sel',s.dataset.t===b.dataset.t));
+  tab=b.dataset.t;
 });
+$('#bConnect').onclick=()=>port?disconnect():connect();
+$('#bDump').onclick=()=>send('l');
+$('#bHdr').onclick=()=>send('h');
+$('#bDemo').onclick=e=>{
+  demo=!demo;e.target.classList.toggle('on',demo);
+  if(demo){resetDemo();con('— demo mode: synthetic flight —','s')}
+  else{S.src=port?'flight':'none';con('— demo off —','s')}
+};
+$('#bClr').onclick=()=>{$('#conout').innerHTML='';csv=[]};
+$('#bMin').onclick=e=>{const c=$('#con');c.classList.toggle('min');
+  e.target.textContent=c.classList.contains('min')?'show':'hide'};
+$('#bTrack').onclick=()=>{track=[];pad=null};
+$('#bView').onclick=()=>cam={yaw:-.9,pitch:.30,dist:5.0};
+$('#bModel').onclick=()=>{setMesh(fitMesh(rocketMesh()),false);con('— model reset —','s')};
+$('#bCsv').onclick=()=>{
+  if(!csv.length){con('no flight rows captured','w');return}
+  const hdr='ms,tilt_deg,roll_deg,azi_deg,alt_m,vv_mps,aup_mps2,lat,lon,fix,nsat,loop_us,ovr,tmo,flt';
+  const u=URL.createObjectURL(new Blob([hdr+'\n'+csv.join('\n')],{type:'text/csv'}));
+  const a=document.createElement('a');a.href=u;a.download='kittyv1-'+Date.now()+'.csv';a.click();
+  URL.revokeObjectURL(u);
+};
+$('#stl').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  try{
+    const m=fitMesh(parseSTL(await f.arrayBuffer()));
+    setMesh(m,true);
+    con(`— loaded ${f.name}: ${m.n/3} triangles —`,'s');
+  }catch(err){con('STL parse failed: '+err.message,'e')}
+  e.target.value='';
+};
 
-if (!('serial' in navigator)){
-  document.querySelector('main').hidden = true;
-  document.querySelector('footer').hidden = true;
-  $('nosupport').hidden = false;
-  $('btnConnect').disabled = true;
+if(!('serial' in navigator)){
+  $('main').hidden=true;$('#con').hidden=true;$('#nosup').hidden=false;
+  $('#bConnect').disabled=true;
+}else{
+  initGL();
+  requestAnimationFrame(frame);
 }
-
-resize();
-requestAnimationFrame(frame);
 </script>
 </body>
 </html>
