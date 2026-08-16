@@ -95,11 +95,12 @@ label.file:hover{border-color:var(--fg3);background:#161a1f}
 .ovl select,.ovl button{background:rgba(11,13,16,.7)}
 
 /* -------------------------------------------------------------- gauges */
-#gauges{flex:0 0 212px;display:grid;grid-template-columns:repeat(3,1fr);
+#gauges{flex:0 0 226px;display:grid;grid-template-columns:repeat(3,1fr);
         gap:1px;background:var(--edge);border-top:1px solid var(--edge)}
-.gauge{background:var(--panel);position:relative;display:flex;
-       align-items:center;justify-content:center}
-.gauge canvas{display:block;width:100%;height:100%}
+.gauge{background:var(--panel);position:relative;overflow:hidden}
+/* Absolute, not height:100% — a percentage height against an auto-sized grid
+   row is circular, and the row silently inflates to the canvas instead. */
+.gauge canvas{position:absolute;inset:0;display:block;width:100%;height:100%}
 .gauge figcaption{position:absolute;top:8px;left:10px;font-size:9px;
        letter-spacing:.14em;color:var(--fg3)}
 .gauge .rd{position:absolute;bottom:8px;right:10px;font-family:var(--mono);
