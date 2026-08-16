@@ -797,10 +797,14 @@ function chart(cv,series,opt){
   /* decimate to at most ~2 points per device pixel column */
   const step=Math.max(1,Math.floor(H.t.length/(pw*2)));
   for(const s of series){
-    x.strokeStyle=s.c;x.lineWidth=1.35;x.beginPath();let pen=false;
+    x.strokeStyle=s.c;x.lineWidth=1.35;x.beginPath();let pen=false,prev=null;
     for(let i=0;i<H.t.length;i+=step){
       if(H.t[i]<t0)continue;const v=s.d[i];
-      if(v==null||!isFinite(v)){pen=false;continue}
+      if(v==null||!isFinite(v)){pen=false;prev=null;continue}
+      /* Angles wrap at ±180. Without lifting the pen a spinning vehicle draws
+         a full-height vertical line on every revolution. */
+      if(s.wrap&&prev!==null&&Math.abs(v-prev)>s.wrap)pen=false;
+      prev=v;
       const px=X(H.t[i]),py=Y(v);
       pen?x.lineTo(px,py):x.moveTo(px,py);pen=true}
     x.stroke();
@@ -1016,7 +1020,7 @@ function frame(){
     chart($('#cAup'),[{d:H.aup,c:'#e0a63c'}],{min:2});
   }else if(tab==='att'){
     chart($('#cTilt'),[{d:H.tilt,c:'#4cc2ff'}],{min:5});
-    chart($('#cRoll'),[{d:H.roll,c:'#4cc98a'},{d:H.azi,c:'#b98ce0'}],{min:20});
+    chart($('#cRoll'),[{d:H.roll,c:'#4cc98a',wrap:180},{d:H.azi,c:'#b98ce0',wrap:180}],{min:20});
     chart($('#cGyr'),[{d:H.gp,c:'#e5605e'},{d:H.gq,c:'#4cc98a'},{d:H.gr,c:'#4cc2ff'}],{min:10});
   }
   requestAnimationFrame(frame);
@@ -1078,7 +1082,7 @@ function tickDemo(){
   D.vv+=a*dt;D.alt=Math.max(0,D.alt+D.vv*dt);
   if(!D.chute&&D.vv<0&&D.t>4){D.chute=true}
   if(D.chute)D.tilt+=(148-D.tilt)*dt*.5;
-  if(D.alt<=0&&D.t>6){resetDemo();return}
+  if(D.alt<=0&&D.t>6){resetDemo();track=[];pad=null;return}  // fly the profile again
   D.roll=((D.roll+D.rr*dt+180)%360)-180;
   D.azi=((D.azi+dt*4+180)%360)-180;
   D.lat+=dt*2.3e-6;D.lon+=dt*5.1e-6;
