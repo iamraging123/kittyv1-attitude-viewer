@@ -6,151 +6,130 @@
 <title>KittyV1 Ground Station</title>
 <style>
 :root{
-  --bg:#0b0d10; --panel:#101317; --sunk:#0d1014; --edge:#1d2229; --edge2:#2b333c;
-  --fg:#dee3e8; --fg2:#8b949c; --fg3:#565f68;
-  --accent:#4cc2ff; --good:#4cc98a; --warn:#e0a63c; --bad:#e5605e;
+  --bg:#000; --edge:#171717; --edge2:#282828;
+  --fg:#ececec; --fg2:#858585; --fg3:#4a4a4a;
+  --live:#5ac8fa; --warn:#d99a2b; --bad:#e0574f;
   --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
   --mono:ui-monospace,"SF Mono","Cascadia Mono",Consolas,"Liberation Mono",monospace;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
-body{
-  background:var(--bg); color:var(--fg); font:13px/1.45 var(--sans);
-  display:flex; flex-direction:column; overflow:hidden;
-  -webkit-font-smoothing:antialiased;
-}
-button,select,input{font:inherit;color:inherit}
-button,select{
-  background:transparent; border:1px solid var(--edge2); border-radius:2px;
-  padding:4px 10px; cursor:pointer; font-size:11px; letter-spacing:.02em;
-}
-button:hover:not(:disabled),select:hover{border-color:var(--fg3);background:#161a1f}
-button:disabled{opacity:.35;cursor:default}
-button.on{border-color:var(--accent);color:var(--accent)}
-.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+body{background:var(--bg);color:var(--fg);font:13px/1.45 var(--sans);
+  display:flex;flex-direction:column;overflow:hidden;-webkit-font-smoothing:antialiased}
+button,select{font:11px var(--sans);color:var(--fg2);background:transparent;
+  border:1px solid var(--edge2);border-radius:2px;padding:4px 10px;cursor:pointer}
+button:hover:not(:disabled),select:hover{color:var(--fg);border-color:#3a3a3a}
+button:disabled{opacity:.3;cursor:default}
+button.on{color:var(--fg);border-color:#4a4a4a}
 
-/* ---------------------------------------------------------------- chrome */
-#top{
-  display:flex;align-items:stretch;gap:0;height:42px;flex:0 0 auto;
-  border-bottom:1px solid var(--edge); background:var(--panel);
-}
-#brand{
-  display:flex;align-items:center;padding:0 16px;font-size:12px;letter-spacing:.14em;
-  font-weight:600;border-right:1px solid var(--edge);color:var(--fg2);
-}
-#brand b{color:var(--fg);font-weight:600}
+/* ------------------------------------------------------------------ top */
+#top{display:flex;align-items:stretch;height:40px;flex:0 0 auto;
+  border-bottom:1px solid var(--edge)}
+#brand{display:flex;align-items:center;padding:0 16px;font-size:11.5px;
+  letter-spacing:.16em;color:var(--fg3);border-right:1px solid var(--edge)}
+#brand b{color:var(--fg);font-weight:500}
 nav{display:flex}
-nav button{
-  border:0;border-radius:0;padding:0 15px;font-size:11px;letter-spacing:.1em;
-  color:var(--fg3);border-bottom:2px solid transparent;
-}
-nav button:hover{background:#151a1f;color:var(--fg2)}
-nav button.sel{color:var(--fg);border-bottom-color:var(--accent);background:transparent}
-#topright{margin-left:auto;display:flex;align-items:center;gap:8px;padding:0 12px}
-#link{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--fg2);
-      font-family:var(--mono);letter-spacing:.02em}
-#led{width:7px;height:7px;border-radius:50%;background:var(--bad)}
-#led.up{background:var(--good)}
+nav button{border:0;border-radius:0;padding:0 16px;font-size:11px;
+  letter-spacing:.11em;color:var(--fg3);border-bottom:1px solid transparent}
+nav button:hover{color:var(--fg2)}
+nav button.sel{color:var(--fg);border-bottom-color:var(--fg)}
+#tr{margin-left:auto;display:flex;align-items:center;gap:8px;padding:0 12px}
+#link{display:flex;align-items:center;gap:7px;font:11px var(--mono);color:var(--fg3)}
+#led{width:6px;height:6px;border-radius:50%;background:#3a3a3a}
+#led.up{background:var(--live)}
 
-/* ---------------------------------------------------------------- layout */
+/* --------------------------------------------------------------- layout */
 main{flex:1 1 auto;min-height:0;position:relative}
-/* Element-qualified so these beat the bare .col/.row display rules below —
-   equal specificity would let the later .col{display:flex} unhide every tab. */
-section.tab{position:absolute;inset:0;display:none;min-height:0}
-section.tab.sel{display:flex;flex-direction:column}
+section.tab{position:absolute;inset:0;display:none;flex-direction:column;min-height:0}
+section.tab.sel{display:flex}
 .col{display:flex;flex-direction:column;min-width:0;min-height:0}
 .row{display:flex;min-width:0;min-height:0}
 .grow{flex:1 1 auto;min-width:0;min-height:0}
-.side{flex:0 0 268px;border-left:1px solid var(--edge);background:var(--panel);
-      overflow-y:auto;padding:14px}
-.pad{padding:14px}
-.sep{border-top:1px solid var(--edge)}
+.vsep{border-left:1px solid var(--edge)}
 
-h2{font-size:9.5px;letter-spacing:.16em;color:var(--fg3);font-weight:600;
-   text-transform:uppercase;margin:0 0 8px}
-.blk{margin-bottom:20px}
-dl{display:grid;grid-template-columns:1fr auto;gap:3px 10px;font-size:12px}
-dt{color:var(--fg2)}
-dd{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
-.hero{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--edge);
-      border:1px solid var(--edge);margin-bottom:20px}
-.hero div{background:var(--panel);padding:10px 11px 11px}
-.hero span{display:block;font-size:8.5px;letter-spacing:.1em;color:var(--fg3);
-           margin-bottom:5px;white-space:nowrap}
-.hero b{font:400 23px/1 var(--mono);font-variant-numeric:tabular-nums}
-.u{display:inline!important;font-size:10.5px;color:var(--fg3);margin:0 0 0 3px}
-
-/* -------------------------------------------------------------- viewport */
-.view{position:relative;background:var(--sunk)}
-.view canvas{display:block;width:100%;height:100%}
-#gl{cursor:grab} #gl:active{cursor:grabbing}
+/* ------------------------------------------------------------- viewport */
+.view{position:relative;background:#000;overflow:hidden}
+.view canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#gl{cursor:grab}#gl:active{cursor:grabbing}
+#map{cursor:crosshair}
 .ovl{position:absolute;display:flex;gap:6px;align-items:center;z-index:2}
-.ovl.tl{top:10px;left:12px} .ovl.tr{top:10px;right:12px}
-.ovl.bl{bottom:10px;left:12px}
-.tag{font-family:var(--mono);font-size:10.5px;color:var(--fg3);letter-spacing:.02em}
-.tag.warn{color:var(--warn)}
+.tl{top:9px;left:11px}.tr{top:9px;right:11px}.bl{bottom:9px;left:11px}
+.br{bottom:9px;right:11px}
+.tag{font:10.5px var(--mono);color:var(--fg3);letter-spacing:.02em}
+.tag.w{color:var(--warn)}
+.ovl button,.ovl select,.ovl label{background:rgba(0,0,0,.72)}
 label.file{border:1px solid var(--edge2);border-radius:2px;padding:4px 10px;
-           font-size:11px;cursor:pointer;background:rgba(11,13,16,.7)}
-label.file:hover{border-color:var(--fg3);background:#161a1f}
-.ovl select,.ovl button{background:rgba(11,13,16,.7)}
+  font-size:11px;color:var(--fg2);cursor:pointer}
+label.file:hover{color:var(--fg);border-color:#3a3a3a}
 
 /* -------------------------------------------------------------- gauges */
-#gauges{flex:0 0 226px;display:grid;grid-template-columns:repeat(3,1fr);
-        gap:1px;background:var(--edge);border-top:1px solid var(--edge)}
-.gauge{background:var(--panel);position:relative;overflow:hidden}
-/* Absolute, not height:100% — a percentage height against an auto-sized grid
-   row is circular, and the row silently inflates to the canvas instead. */
-.gauge canvas{position:absolute;inset:0;display:block;width:100%;height:100%}
-.gauge figcaption{position:absolute;top:8px;left:10px;font-size:9px;
-       letter-spacing:.14em;color:var(--fg3)}
-.gauge .rd{position:absolute;bottom:8px;right:10px;font-family:var(--mono);
-       font-size:11px;color:var(--fg2);font-variant-numeric:tabular-nums}
+#gcol{flex:0 0 196px;display:flex;flex-direction:column}
+.gauge{flex:1 1 0;position:relative;border-bottom:1px solid var(--edge);overflow:hidden}
+.gauge:last-child{border-bottom:0}
+.gauge canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.gauge figcaption{position:absolute;top:8px;left:11px;font-size:8.5px;
+  letter-spacing:.15em;color:var(--fg3);z-index:1}
+.gauge .rd{position:absolute;bottom:8px;left:0;width:100%;text-align:center;
+  font:12px var(--mono);color:var(--fg2);font-variant-numeric:tabular-nums;z-index:1}
+
+/* --------------------------------------------------------------- strip */
+#strip{flex:0 0 auto;display:flex;border-top:1px solid var(--edge)}
+#strip div{flex:1 1 0;padding:8px 12px;border-right:1px solid var(--edge);min-width:0}
+#strip div:last-child{border-right:0}
+#strip span{display:block;font-size:8.5px;letter-spacing:.13em;color:var(--fg3);
+  margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#strip b{font:400 17px/1 var(--mono);font-variant-numeric:tabular-nums;
+  white-space:nowrap}
 
 /* -------------------------------------------------------------- charts */
 .chart{position:relative;border-bottom:1px solid var(--edge);min-height:0}
 .chart:last-child{border-bottom:0}
-.chart canvas{display:block;width:100%;height:100%}
-.chart .ttl{position:absolute;top:8px;left:12px;font-size:9.5px;
-       letter-spacing:.14em;color:var(--fg3)}
-.chart .key{position:absolute;top:8px;right:12px;font-family:var(--mono);
-       font-size:10.5px;display:flex;gap:12px}
+.chart canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.chart .ttl{position:absolute;top:8px;left:13px;font-size:8.5px;
+  letter-spacing:.15em;color:var(--fg3);z-index:1}
+.chart .key{position:absolute;top:8px;right:13px;font:10px var(--mono);
+  display:flex;gap:12px;z-index:1}
 .chart .key i{font-style:normal}
+aside{flex:0 0 232px;border-left:1px solid var(--edge);overflow-y:auto;padding:14px}
+h2{font-size:8.5px;letter-spacing:.15em;color:var(--fg3);font-weight:400;
+  text-transform:uppercase;margin:0 0 8px}
+.blk{margin-bottom:20px}
+dl{display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:12px}
+dt{color:var(--fg2)}
+dd{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
 
 /* -------------------------------------------------------------- events */
-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px}
-th{text-align:left;font-weight:400;font-size:9px;letter-spacing:.14em;
-   color:var(--fg3);padding:0 10px 7px 0;border-bottom:1px solid var(--edge);
-   font-family:var(--sans)}
-td{padding:4px 10px 4px 0;border-bottom:1px solid #14181c;vertical-align:top}
-tr.W td.n{color:var(--warn)} tr.E td.n{color:var(--bad)} tr.I td.n{color:var(--fg2)}
-td.dim{color:var(--fg3)} td.note{color:var(--fg2);font-family:var(--sans);font-size:11.5px}
+table{width:100%;border-collapse:collapse;font:11.5px var(--mono)}
+th{text-align:left;font:400 8.5px var(--sans);letter-spacing:.15em;color:var(--fg3);
+  padding:0 10px 7px 0;border-bottom:1px solid var(--edge)}
+td{padding:5px 10px 5px 0;border-bottom:1px solid #0e0e0e;vertical-align:top}
+tr.W td.n{color:var(--warn)}tr.E td.n{color:var(--bad)}tr.I td.n{color:var(--fg2)}
+td.d{color:var(--fg3)}td.x{color:var(--fg2);font:11.5px var(--sans)}
 .chips{display:flex;flex-wrap:wrap;gap:5px}
-.chip{font-family:var(--mono);font-size:10px;padding:3px 8px;border:1px solid var(--edge);
-      color:var(--fg3);border-radius:2px}
-.chip.w{border-color:#4a3a18;color:var(--warn);background:#1a1509}
-.chip.e{border-color:#4d2422;color:var(--bad);background:#1c0f0e}
+.chip{font:10px var(--mono);padding:3px 8px;border:1px solid var(--edge);
+  color:var(--fg3);border-radius:2px}
+.chip.w{border-color:#3d2f12;color:var(--warn)}
+.chip.e{border-color:#3d1f1c;color:var(--bad)}
 
 /* ------------------------------------------------------------- console */
-#con{flex:0 0 auto;border-top:1px solid var(--edge);background:var(--panel);
-     display:flex;flex-direction:column;height:126px}
-#con.min{height:29px}
-#conbar{display:flex;align-items:center;gap:8px;padding:0 12px;height:28px;
-        flex:0 0 auto;border-bottom:1px solid var(--edge)}
-#conbar h2{margin:0}
-#conbar .sp{margin-left:auto;display:flex;gap:6px}
-#conout{flex:1 1 auto;overflow-y:auto;padding:5px 12px 8px;
-        font-family:var(--mono);font-size:11px;line-height:1.5;
-        white-space:pre-wrap;word-break:break-all;color:var(--fg2)}
-#con.min #conout{display:none}
-#conout .m{color:var(--fg3)} #conout .w{color:var(--warn)}
-#conout .e{color:var(--bad)} #conout .s{color:var(--accent)}
-::-webkit-scrollbar{width:9px;height:9px}
-::-webkit-scrollbar-thumb{background:#232a31;border-radius:0}
-::-webkit-scrollbar-thumb:hover{background:#2f3841}
+#con{flex:0 0 auto;border-top:1px solid var(--edge);display:flex;
+  flex-direction:column;height:120px}
+#con.min{height:28px}
+#cbar{display:flex;align-items:center;gap:8px;padding:0 12px;height:27px;
+  flex:0 0 auto;border-bottom:1px solid var(--edge)}
+#cbar .sp{margin-left:auto;display:flex;gap:6px}
+#cout{flex:1 1 auto;overflow-y:auto;padding:5px 12px 8px;font:11px/1.5 var(--mono);
+  white-space:pre-wrap;word-break:break-all;color:var(--fg2)}
+#con.min #cout{display:none}
+#cout .m{color:var(--fg3)}#cout .w{color:var(--warn)}
+#cout .e{color:var(--bad)}#cout .s{color:var(--live)}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#1e1e1e}
+::-webkit-scrollbar-thumb:hover{background:#2c2c2c}
 ::-webkit-scrollbar-track{background:transparent}
-
-#nosup{padding:40px;max-width:560px;line-height:1.8;color:var(--fg2)}
-#nosup code{font-family:var(--mono);color:var(--accent)}
+#nosup{padding:40px;max-width:540px;line-height:1.8;color:var(--fg2)}
+#nosup code{font-family:var(--mono);color:var(--live)}
+a{color:var(--fg2);text-decoration:none}a:hover{color:var(--fg)}
 </style>
 </head>
 <body>
@@ -159,17 +138,15 @@ td.dim{color:var(--fg3)} td.note{color:var(--fg2);font-family:var(--sans);font-s
   <div id="brand">KITTY<b>V1</b></div>
   <nav>
     <button class="sel" data-t="flight">FLIGHT</button>
-    <button data-t="nav">NAV</button>
     <button data-t="kalman">KALMAN</button>
     <button data-t="att">ATTITUDE</button>
     <button data-t="events">EVENTS</button>
   </nav>
-  <div id="topright">
-    <div id="link"><span id="led"></span><span id="linktxt">offline</span></div>
+  <div id="tr">
+    <div id="link"><span id="led"></span><span id="ltxt">offline</span></div>
     <select id="baud">
       <option>115200</option><option>230400</option><option>460800</option>
-      <option>57600</option><option>9600</option>
-    </select>
+      <option>57600</option><option>9600</option></select>
     <button id="bConnect">Connect</button>
     <button id="bDemo">Demo</button>
   </div>
@@ -177,255 +154,185 @@ td.dim{color:var(--fg3)} td.note{color:var(--fg2);font-family:var(--sans);font-s
 
 <main>
   <!-- ============================================================ FLIGHT -->
-  <section class="tab sel col" data-t="flight">
+  <section class="tab sel" data-t="flight">
     <div class="row grow">
-      <div class="col grow">
-        <div class="view grow">
-          <canvas id="gl"></canvas>
-          <div class="ovl tl"><span class="tag" id="srcTag">no data</span></div>
-          <div class="ovl tr">
-            <label class="file">STL<input type="file" id="stl" accept=".stl" hidden></label>
-            <select id="noseAxis" title="which model axis points out the nose">
-              <option value="0">nose +X</option><option value="1">nose −X</option>
-              <option value="2">nose +Y</option><option value="3">nose −Y</option>
-              <option value="4" selected>nose +Z</option><option value="5">nose −Z</option>
-            </select>
-            <button id="bModel">reset model</button>
-            <button id="bView">reset view</button>
-          </div>
-          <div class="ovl bl"><span class="tag">drag orbit &nbsp;·&nbsp; scroll zoom &nbsp;·&nbsp; body +X = nose</span></div>
-        </div>
-        <div id="gauges">
-          <figure class="gauge"><figcaption>ATTITUDE</figcaption>
-            <canvas id="gAi"></canvas><div class="rd" id="rdAi">—</div></figure>
-          <figure class="gauge"><figcaption>ALTITUDE &nbsp;m AGL</figcaption>
-            <canvas id="gAlt"></canvas><div class="rd" id="rdAlt">—</div></figure>
-          <figure class="gauge"><figcaption>VERTICAL SPEED &nbsp;m/s</figcaption>
-            <canvas id="gVs"></canvas><div class="rd" id="rdVs">—</div></figure>
-        </div>
-      </div>
-      <aside class="side">
-        <div class="hero">
-          <div><span>TILT · FROM VERT</span><b id="vTilt">—</b><span class="u">deg</span></div>
-          <div><span>ROLL · ABOUT NOSE</span><b id="vRoll">—</b><span class="u">deg</span></div>
-          <div><span>ALTITUDE AGL</span><b id="vAlt">—</b><span class="u">m</span></div>
-          <div><span>VERTICAL SPEED</span><b id="vVv">—</b><span class="u">m/s</span></div>
-        </div>
-        <div class="blk"><h2>Derived</h2><dl>
-          <dt>azimuth</dt><dd><span id="vAzi">—</span>°</dd>
-          <dt>accel up</dt><dd><span id="vAup">—</span> m/s²</dd>
-          <dt>apogee</dt><dd><span id="vApo">—</span> m</dd>
-          <dt>max v speed</dt><dd><span id="vMaxV">—</span> m/s</dd>
-        </dl></div>
-        <div class="blk" id="bRaw" hidden><h2>IMU · body frame</h2><dl>
-          <dt>accel</dt><dd><span id="vAcc">—</span> g</dd>
-          <dt>|a|</dt><dd><span id="vAmag">—</span> g</dd>
-          <dt>gyro</dt><dd><span id="vGyr">—</span> °/s</dd>
-          <dt>die temp</dt><dd><span id="vTemp">—</span> °C</dd>
-        </dl></div>
-        <div class="blk" id="bMag" hidden><h2>Magnetometer</h2><dl>
-          <dt>field</dt><dd><span id="vMg">—</span> µT</dd>
-          <dt>|B|</dt><dd><span id="vBm">—</span> µT</dd>
-        </dl></div>
-        <div class="blk"><h2>Faults · sticky</h2><div class="chips" id="chips"></div></div>
-      </aside>
-    </div>
-  </section>
 
-  <!-- =============================================================== NAV -->
-  <section class="tab col" data-t="nav">
-    <div class="row grow">
-      <div class="view grow"><canvas id="map"></canvas>
-        <div class="ovl tl"><span class="tag" id="mapTag">no fix</span></div>
-        <div class="ovl tr"><button id="bTrack">clear track</button></div>
+      <div class="view grow">
+        <canvas id="gl"></canvas>
+        <div class="ovl tl"><span class="tag" id="srcTag">awaiting telemetry</span></div>
+        <div class="ovl tr">
+          <label class="file">STL<input type="file" id="stl" accept=".stl" hidden></label>
+          <select id="noseAxis" title="which model axis points out the nose">
+            <option value="0">nose +X</option><option value="1">nose −X</option>
+            <option value="2">nose +Y</option><option value="3">nose −Y</option>
+            <option value="4" selected>nose +Z</option><option value="5">nose −Z</option>
+          </select>
+          <button id="bModel">model</button><button id="bView">view</button>
+        </div>
+        <div class="ovl bl"><span class="tag">drag orbit · scroll zoom · body +X = nose</span></div>
       </div>
-      <aside class="side">
-        <div class="hero">
-          <div><span>RANGE</span><b id="vRange">—</b><span class="u">m from pad</span></div>
-          <div><span>BEARING</span><b id="vBrg">—</b><span class="u">deg true</span></div>
+
+      <div id="gcol" class="vsep">
+        <figure class="gauge"><figcaption>ATTITUDE</figcaption>
+          <canvas id="gAi"></canvas><div class="rd" id="rdAi">—</div></figure>
+        <figure class="gauge"><figcaption>ALTITUDE m</figcaption>
+          <canvas id="gAlt"></canvas><div class="rd" id="rdAlt">—</div></figure>
+        <figure class="gauge"><figcaption>VERT SPEED m/s</figcaption>
+          <canvas id="gVs"></canvas><div class="rd" id="rdVs">—</div></figure>
+      </div>
+
+      <div class="view grow vsep">
+        <canvas id="map"></canvas>
+        <div class="ovl tl"><span class="tag" id="mapTag">no fix</span></div>
+        <div class="ovl tr">
+          <button id="bZo">−</button><button id="bZi">+</button>
+          <button id="bFollow" class="on">follow</button>
+          <button id="bTrack">clear</button>
         </div>
-        <div class="blk"><h2>Position</h2><dl>
-          <dt>latitude</dt><dd id="vLat">—</dd>
-          <dt>longitude</dt><dd id="vLon">—</dd>
-          <dt>fix type</dt><dd id="vFix">—</dd>
-          <dt>satellites</dt><dd id="vSat">—</dd>
-        </dl></div>
-        <div class="blk"><h2>Pad reference</h2><dl>
-          <dt>latitude</dt><dd id="vPLat">—</dd>
-          <dt>longitude</dt><dd id="vPLon">—</dd>
-          <dt>track points</dt><dd id="vPts">0</dd>
-        </dl></div>
-        <div class="blk"><h2>Recovery</h2>
-          <a id="mapLink" target="_blank" rel="noopener"
-             style="font-size:11.5px;color:var(--accent);text-decoration:none">open in maps →</a>
-          <p style="font-size:11px;color:var(--fg3);margin-top:8px;line-height:1.6">
-            Track is plotted in a local north/east frame relative to the pad —
-            no tiles, so it works with no signal at the field.</p>
-        </div>
-      </aside>
+        <div class="ovl br"><span class="tag" id="attrib">Imagery © Esri, Maxar, Earthstar Geographics</span></div>
+      </div>
+    </div>
+
+    <div id="strip">
+      <div><span>TILT deg</span><b id="vTilt">—</b></div>
+      <div><span>ROLL deg</span><b id="vRoll">—</b></div>
+      <div><span>ALT AGL m</span><b id="vAlt">—</b></div>
+      <div><span>V SPEED m/s</span><b id="vVv">—</b></div>
+      <div><span>APOGEE m</span><b id="vApo">—</b></div>
+      <div><span>RANGE m</span><b id="vRange">—</b></div>
+      <div><span>BEARING deg</span><b id="vBrg">—</b></div>
+      <div><span>FIX / SATS</span><b id="vFix">—</b></div>
+      <div><span>LATITUDE</span><b id="vLat">—</b></div>
+      <div><span>LONGITUDE</span><b id="vLon">—</b></div>
     </div>
   </section>
 
   <!-- ============================================================ KALMAN -->
-  <section class="tab col" data-t="kalman">
+  <section class="tab" data-t="kalman">
     <div class="row grow">
       <div class="col grow">
         <div class="chart grow"><canvas id="cAlt"></canvas>
-          <div class="ttl">ALTITUDE AGL &nbsp;m</div>
-          <div class="key"><i style="color:#4cc2ff">KF</i></div></div>
+          <div class="ttl">ALTITUDE AGL m</div><div class="key"><i style="color:#5ac8fa">KF</i></div></div>
         <div class="chart grow"><canvas id="cVv"></canvas>
-          <div class="ttl">VERTICAL VELOCITY &nbsp;m/s</div>
-          <div class="key"><i style="color:#4cc98a">KF</i></div></div>
+          <div class="ttl">VERTICAL VELOCITY m/s</div><div class="key"><i style="color:#5ac8fa">KF</i></div></div>
         <div class="chart grow"><canvas id="cAup"></canvas>
-          <div class="ttl">WORLD-UP ACCELERATION &nbsp;m/s² &nbsp;· gravity removed</div>
-          <div class="key"><i style="color:#e0a63c">a·up</i></div></div>
+          <div class="ttl">WORLD-UP ACCELERATION m/s² · gravity removed</div>
+          <div class="key"><i style="color:#d99a2b">a·up</i></div></div>
       </div>
-      <aside class="side">
+      <aside>
         <div class="blk"><h2>Filter state</h2><dl>
           <dt>altitude</dt><dd><span id="kAlt">—</span> m</dd>
           <dt>velocity</dt><dd><span id="kVv">—</span> m/s</dd>
-          <dt>accel in</dt><dd><span id="kAup">—</span> m/s²</dd>
-        </dl></div>
+          <dt>accel in</dt><dd><span id="kAup">—</span> m/s²</dd></dl></div>
         <div class="blk"><h2>Flight</h2><dl>
           <dt>apogee</dt><dd><span id="kApo">—</span> m</dd>
           <dt>max ascent</dt><dd><span id="kMaxU">—</span> m/s</dd>
           <dt>max descent</dt><dd><span id="kMaxD">—</span> m/s</dd>
           <dt>peak accel</dt><dd><span id="kMaxA">—</span> m/s²</dd>
-          <dt>samples</dt><dd id="kN">0</dd>
-        </dl></div>
+          <dt>samples</dt><dd id="kN">0</dd></dl></div>
         <div class="blk"><h2>Window</h2>
           <select id="win" style="width:100%">
-            <option value="30">last 30 s</option>
-            <option value="60" selected>last 60 s</option>
-            <option value="180">last 3 min</option>
-            <option value="0">entire session</option>
-          </select>
-        </div>
-        <div class="blk"><h2>Note</h2>
-          <p style="font-size:11px;color:var(--fg3);line-height:1.6">
-            Altitude is AGL from the pad reference, not MSL. The KF propagates on
-            accelerometer and is corrected by baro at 50 Hz — and by GPS once a
-            pad reference exists.</p></div>
+            <option value="30">last 30 s</option><option value="60" selected>last 60 s</option>
+            <option value="180">last 3 min</option><option value="0">whole session</option>
+          </select></div>
       </aside>
     </div>
   </section>
 
   <!-- ========================================================== ATTITUDE -->
-  <section class="tab col" data-t="att">
+  <section class="tab" data-t="att">
     <div class="row grow">
       <div class="col grow">
         <div class="chart grow"><canvas id="cTilt"></canvas>
-          <div class="ttl">TILT FROM VERTICAL &nbsp;deg</div>
-          <div class="key"><i style="color:#4cc2ff">tilt</i></div></div>
+          <div class="ttl">TILT FROM VERTICAL deg</div><div class="key"><i style="color:#5ac8fa">tilt</i></div></div>
         <div class="chart grow"><canvas id="cRoll"></canvas>
-          <div class="ttl">ROLL ABOUT NOSE / AZIMUTH &nbsp;deg</div>
-          <div class="key"><i style="color:#4cc98a">roll</i><i style="color:#b98ce0">azi</i></div></div>
+          <div class="ttl">ROLL ABOUT NOSE / AZIMUTH deg</div>
+          <div class="key"><i style="color:#5ac8fa">roll</i><i style="color:#9b8cd0">azi</i></div></div>
         <div class="chart grow"><canvas id="cGyr"></canvas>
-          <div class="ttl">ANGULAR RATE · body &nbsp;deg/s</div>
-          <div class="key"><i style="color:#e5605e">p</i><i style="color:#4cc98a">q</i><i style="color:#4cc2ff">r</i></div></div>
+          <div class="ttl">ANGULAR RATE · body deg/s</div>
+          <div class="key"><i style="color:#e0574f">p</i><i style="color:#7fbf7f">q</i><i style="color:#5ac8fa">r</i></div></div>
       </div>
-      <aside class="side">
+      <aside>
         <div class="blk"><h2>Angles</h2><dl>
           <dt>tilt</dt><dd><span id="aTilt">—</span>°</dd>
           <dt>roll</dt><dd><span id="aRoll">—</span>°</dd>
-          <dt>azimuth</dt><dd><span id="aAzi">—</span>°</dd>
-        </dl></div>
-        <div class="blk"><h2>Quaternion · body→world</h2><dl>
+          <dt>azimuth</dt><dd><span id="aAzi">—</span>°</dd></dl></div>
+        <div class="blk"><h2>Quaternion body→world</h2><dl>
           <dt>w</dt><dd id="qw">1.0000</dd><dt>x</dt><dd id="qx">0.0000</dd>
-          <dt>y</dt><dd id="qy">0.0000</dd><dt>z</dt><dd id="qz">0.0000</dd>
-        </dl></div>
+          <dt>y</dt><dd id="qy">0.0000</dd><dt>z</dt><dd id="qz">0.0000</dd></dl></div>
         <div class="blk"><h2>Nose in world</h2><dl>
-          <dt>east</dt><dd id="nx">—</dd><dt>north</dt><dd id="ny">—</dd><dt>up</dt><dd id="nz">—</dd>
-        </dl></div>
-        <div class="blk"><h2>Note</h2>
-          <p style="font-size:11px;color:var(--fg3);line-height:1.6">
-            The quaternion is reconstructed from tilt/roll/azimuth by inverting the
-            firmware's swing–twist decomposition. Those three angles fully
-            parameterise SO(3), so it is exact rather than approximate.</p></div>
+          <dt>east</dt><dd id="nx">—</dd><dt>north</dt><dd id="ny">—</dd>
+          <dt>up</dt><dd id="nz">—</dd></dl></div>
+        <div class="blk"><h2>IMU body frame</h2><dl>
+          <dt>accel g</dt><dd id="vAcc">—</dd><dt>|a|</dt><dd id="vAmag">—</dd>
+          <dt>gyro °/s</dt><dd id="vGyr">—</dd><dt>temp °C</dt><dd id="vTemp">—</dd>
+          <dt>mag µT</dt><dd id="vMg">—</dd><dt>|B|</dt><dd id="vBm">—</dd></dl></div>
       </aside>
     </div>
   </section>
 
   <!-- ============================================================ EVENTS -->
-  <section class="tab col" data-t="events">
+  <section class="tab" data-t="events">
     <div class="row grow">
-      <div class="col grow pad" style="overflow-y:auto">
+      <div class="col grow" style="overflow-y:auto;padding:14px">
         <h2>Event records</h2>
         <table><thead><tr>
-          <th style="width:70px">FIRST</th><th style="width:70px">LAST</th>
-          <th style="width:170px">EVENT</th><th style="width:60px">COUNT</th>
-          <th style="width:90px">VALUE</th><th>INTERPRETATION</th>
+          <th style="width:66px">FIRST</th><th style="width:66px">LAST</th>
+          <th style="width:168px">EVENT</th><th style="width:56px">COUNT</th>
+          <th style="width:86px">VALUE</th><th>INTERPRETATION</th>
         </tr></thead><tbody id="evb">
-          <tr><td colspan="6" class="dim" style="padding-top:12px">no events yet</td></tr>
+          <tr><td colspan="6" class="d" style="padding-top:12px">no events yet</td></tr>
         </tbody></table>
       </div>
-      <aside class="side">
+      <aside>
         <div class="blk"><h2>Loop health</h2><dl>
-          <dt>telemetry rows/s</dt><dd id="hRate">—</dd>
+          <dt>rows/s</dt><dd id="hRate">—</dd>
           <dt>implied loop</dt><dd><span id="hHz">—</span> Hz</dd>
           <dt>last loop work</dt><dd><span id="hUs">—</span> µs</dd>
           <dt>overruns</dt><dd id="hOvr">—</dd>
           <dt>overruns/s</dt><dd id="hOvrR">—</dd>
-          <dt>imu timeouts</dt><dd id="hTmo">—</dd>
-        </dl></div>
-        <div class="blk"><h2>Faults · sticky</h2><div class="chips" id="chips2"></div></div>
-        <div class="blk"><h2>STATS</h2>
-          <div class="mono" id="statsLine" style="font-size:11px;color:var(--fg2);
-               line-height:1.7;word-break:break-all">—</div></div>
-        <div class="blk"><h2>Note</h2>
-          <p style="font-size:11px;color:var(--fg3);line-height:1.6">
-            Counts include occurrences the firmware suppressed — printing is
-            throttled to one line per code per second, but every occurrence is
-            counted. Fault bits latch and never clear.</p></div>
+          <dt>imu timeouts</dt><dd id="hTmo">—</dd></dl></div>
+        <div class="blk"><h2>Faults · sticky</h2><div class="chips" id="chips"></div></div>
+        <div class="blk"><h2>Stats</h2>
+          <div id="stats" style="font:11px/1.7 var(--mono);color:var(--fg2);
+            word-break:break-all">—</div></div>
       </aside>
     </div>
   </section>
 </main>
 
 <div id="con">
-  <div id="conbar">
-    <h2>Serial console</h2>
-    <div class="sp">
-      <button id="bDump" disabled>dump log · l</button>
-      <button id="bHdr" disabled>header · h</button>
-      <button id="bCsv">export CSV</button>
-      <button id="bClr">clear</button>
-      <button id="bMin">hide</button>
-    </div>
-  </div>
-  <div id="conout"></div>
+  <div id="cbar"><h2>Serial console</h2><div class="sp">
+    <button id="bDump" disabled>dump log · l</button>
+    <button id="bHdr" disabled>header · h</button>
+    <button id="bCsv">CSV</button><button id="bClr">clear</button>
+    <button id="bMin">hide</button></div></div>
+  <div id="cout"></div>
 </div>
 
 <div id="nosup" hidden>
-  <h2 style="font-size:13px;letter-spacing:0;color:var(--fg);text-transform:none">
-    Web Serial is not available in this browser.</h2>
+  <p><b style="color:var(--fg)">Web Serial is not available in this browser.</b></p>
   <p style="margin-top:10px">Use Chrome or Edge on desktop, served over
   <code>https://</code> or <code>localhost</code>. Firefox and Safari do not
-  implement the API, and it is unavailable inside sandboxed iframes.</p>
+  implement the API.</p>
 </div>
 
 <script>
 "use strict";
-const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const D2R=Math.PI/180;
 
-/* ═════════════════════════════════════════════════════════ state + history */
-const S={
-  tilt:0,roll:0,azi:0,q:[1,0,0,0],
-  alt:null,vv:null,aup:null,
-  accel:null,gyro:null,temp:null,mag:null,
-  lat:0,lon:0,fix:0,nsat:0,
-  loopUs:0,ovr:0,tmo:0,faults:0,
-  src:'none',
+/* ═════════════════════════════════════════════════════════════════ state */
+const S={tilt:0,roll:0,azi:0,q:[1,0,0,0],alt:null,vv:null,aup:null,
+  accel:null,gyro:null,temp:null,mag:null,lat:0,lon:0,fix:0,nsat:0,
+  loopUs:0,ovr:0,tmo:0,faults:0,src:'none',
   apogee:-Infinity,maxUp:-Infinity,maxDn:Infinity,maxA:0,
   rows:0,rowsMark:0,ovrMark:0,tMark:performance.now(),rate:0,ovrRate:0,
-  t0:performance.now()
-};
+  t0:performance.now()};
 const H={t:[],alt:[],vv:[],aup:[],tilt:[],roll:[],azi:[],gp:[],gq:[],gr:[]};
 const HMAX=40000;
-let track=[], pad=null;
+let track=[],pad=null,csv=[];
 const events=new Map();
-let csv=[];
-
 const FAULTS=[[0x01,'IMU INIT','e'],[0x02,'BARO INIT','e'],[0x04,'GYRO CAL','w'],
   [0x08,'IMU TMO','w'],[0x10,'OVERRUN','w'],[0x20,'BARO DATA','w'],
   [0x40,'MAG INIT','w'],[0x80,'GPS INIT','w']];
@@ -435,10 +342,10 @@ function hist(t){
   H.tilt.push(S.tilt);H.roll.push(S.roll);H.azi.push(S.azi);
   H.gp.push(S.gyro?S.gyro[0]:null);H.gq.push(S.gyro?S.gyro[1]:null);
   H.gr.push(S.gyro?S.gyro[2]:null);
-  if(H.t.length>HMAX) for(const k in H) H[k].splice(0,H[k].length-HMAX);
+  if(H.t.length>HMAX)for(const k in H)H[k].splice(0,H[k].length-HMAX);
 }
 
-/* ═══════════════════════════════════════════════════════════════ quaternion */
+/* ════════════════════════════════════════════════════════════ quaternion */
 const qMul=(a,b)=>[a[0]*b[0]-a[1]*b[1]-a[2]*b[2]-a[3]*b[3],
  a[0]*b[1]+a[1]*b[0]+a[2]*b[3]-a[3]*b[2],
  a[0]*b[2]-a[1]*b[3]+a[2]*b[0]+a[3]*b[1],
@@ -449,201 +356,168 @@ function qRot(q,v){const[w,x,y,z]=q,[a,b,c]=v;return[
  2*(x*y+w*z)*a+(1-2*(x*x+z*z))*b+2*(y*z-w*x)*c,
  2*(x*z-w*y)*a+2*(y*z+w*x)*b+(1-2*(x*x+y*y))*c]}
 const noseOf=q=>[1-2*(q[2]**2+q[3]**2),2*(q[1]*q[2]+q[0]*q[3]),2*(q[1]*q[3]-q[0]*q[2])];
-
-/* Inverse of the firmware's swing-twist split (attitude.cpp).
-   The swing has zero x-component, i.e. it rotates about an axis perpendicular
-   to the nose — which is exactly the shortest arc onto the nose direction. */
+/* Inverse of the firmware's swing-twist split (attitude.cpp). */
 function swing(n){const w=1+n[0];return w<1e-7?[0,0,0,1]:qN([w,0,-n[2],n[1]])}
 function qFromAngles(t,r,a){
-  const T=t*Math.PI/180,A=a*Math.PI/180,R=r*Math.PI/180;
+  const T=t*D2R,A=a*D2R,R=r*D2R;
   return qN(qMul(swing([Math.sin(T)*Math.cos(A),Math.sin(T)*Math.sin(A),Math.cos(T)]),
-                 [Math.cos(R/2),Math.sin(R/2),0,0]));
+    [Math.cos(R/2),Math.sin(R/2),0,0]));
 }
 function qFromAccel(a){
-  const m=Math.hypot(a[0],a[1],a[2]); if(m<.3||m>3) return null;
-  const u=[a[0]/m,a[1]/m,a[2]/m], w=1+u[2];
+  const m=Math.hypot(a[0],a[1],a[2]);if(m<.3||m>3)return null;
+  const u=[a[0]/m,a[1]/m,a[2]/m],w=1+u[2];
   return w<1e-7?[0,0,1,0]:qN([w,u[1],-u[0],0]);
 }
 
-/* ═════════════════════════════════════════════════════════════════ matrices */
+/* ══════════════════════════════════════════════════════════════ matrices */
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const crs=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const nrm=v=>{const n=Math.hypot(...v)||1;return[v[0]/n,v[1]/n,v[2]/n]};
 const M={
   mul(a,b){const o=new Float32Array(16);
     for(let c=0;c<4;c++)for(let r=0;r<4;r++)
       o[c*4+r]=a[r]*b[c*4]+a[4+r]*b[c*4+1]+a[8+r]*b[c*4+2]+a[12+r]*b[c*4+3];
     return o},
   persp(f,as,n,fa){const t=1/Math.tan(f/2);
-    return new Float32Array([t/as,0,0,0, 0,t,0,0, 0,0,(fa+n)/(n-fa),-1, 0,0,2*fa*n/(n-fa),0])},
-  look(e,c,u){
-    const z=nrm([e[0]-c[0],e[1]-c[1],e[2]-c[2]]),x=nrm(crs(u,z)),y=crs(z,x);
-    return new Float32Array([x[0],y[0],z[0],0, x[1],y[1],z[1],0, x[2],y[2],z[2],0,
+    return new Float32Array([t/as,0,0,0,0,t,0,0,0,0,(fa+n)/(n-fa),-1,0,0,2*fa*n/(n-fa),0])},
+  look(e,c,u){const z=nrm([e[0]-c[0],e[1]-c[1],e[2]-c[2]]),x=nrm(crs(u,z)),y=crs(z,x);
+    return new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,
       -dot(x,e),-dot(y,e),-dot(z,e),1])},
   quat(q){const[w,x,y,z]=q;return new Float32Array([
-    1-2*(y*y+z*z),2*(x*y+w*z),2*(x*z-w*y),0,
-    2*(x*y-w*z),1-2*(x*x+z*z),2*(y*z+w*x),0,
+    1-2*(y*y+z*z),2*(x*y+w*z),2*(x*z-w*y),0, 2*(x*y-w*z),1-2*(x*x+z*z),2*(y*z+w*x),0,
     2*(x*z+w*y),2*(y*z-w*x),1-2*(x*x+y*y),0, 0,0,0,1])},
-  scale(s){return new Float32Array([s,0,0,0, 0,s,0,0, 0,0,s,0, 0,0,0,1])},
-  trans(t){return new Float32Array([1,0,0,0, 0,1,0,0, 0,0,1,0, t[0],t[1],t[2],1])},
+  scale(s){return new Float32Array([s,0,0,0,0,s,0,0,0,0,s,0,0,0,0,1])},
+  trans(t){return new Float32Array([1,0,0,0,0,1,0,0,0,0,1,0,t[0],t[1],t[2],1])},
   m3(m){return new Float32Array([m[0],m[1],m[2],m[4],m[5],m[6],m[8],m[9],m[10]])}
 };
-const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
-const crs=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
-const nrm=v=>{const n=Math.hypot(...v)||1;return[v[0]/n,v[1]/n,v[2]/n]};
 
-/* ═══════════════════════════════════════════════════════════════════ meshes */
+/* ════════════════════════════════════════════════════════════════ meshes */
 function pushTri(P,C,a,b,c,col){
-  const u=[b[0]-a[0],b[1]-a[1],b[2]-a[2]],v=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];
-  const n=nrm(crs(u,v));
+  const n=nrm(crs([b[0]-a[0],b[1]-a[1],b[2]-a[2]],[c[0]-a[0],c[1]-a[1],c[2]-a[2]]));
   for(const p of[a,b,c]){P.push(p[0],p[1],p[2],n[0],n[1],n[2]);C.push(...col)}
 }
-/* Default vehicle: body +X out the nose, matching the firmware. */
 function rocketMesh(){
   const P=[],C=[],R=.16,XT=-1,XS=.42,XN=1.06,N=24;
-  const grey=[.62,.66,.70],pale=[.74,.77,.80],mark=[.86,.31,.26],
-        fin=[.34,.44,.55],can=[.30,.72,.92],dark=[.22,.25,.29];
+  const g=[.52,.55,.58],pl=[.66,.68,.70],mk=[.72,.26,.22],
+        fn=[.30,.33,.37],cn=[.35,.62,.76],dk=[.16,.17,.19];
   const ring=x=>Array.from({length:N},(_,i)=>{const a=i/N*2*Math.PI;
     return[x,R*Math.cos(a),R*Math.sin(a)]});
   const r0=ring(XT),r1=ring(XS);
-  for(let i=0;i<N;i++){const j=(i+1)%N,col=(i<2)?mark:grey;
-    pushTri(P,C,r0[i],r0[j],r1[j],col);pushTri(P,C,r0[i],r1[j],r1[i],col)}
-  for(let i=0;i<N;i++)pushTri(P,C,r1[i],r1[(i+1)%N],[XN,0,0],pale);
-  for(let i=1;i<N-1;i++)pushTri(P,C,r0[0],r0[i+1],r0[i],dark);
-  const panel=(ph,x0,x1,x2,x3,ra,rb,col)=>{
-    const u=[0,Math.cos(ph),Math.sin(ph)],p=(x,r)=>[x,u[1]*r,u[2]*r];
-    pushTri(P,C,p(x0,ra),p(x1,ra),p(x2,rb),col);
-    pushTri(P,C,p(x0,ra),p(x2,rb),p(x3,rb),col)};
+  for(let i=0;i<N;i++){const j=(i+1)%N,c=(i<2)?mk:g;
+    pushTri(P,C,r0[i],r0[j],r1[j],c);pushTri(P,C,r0[i],r1[j],r1[i],c)}
+  for(let i=0;i<N;i++)pushTri(P,C,r1[i],r1[(i+1)%N],[XN,0,0],pl);
+  for(let i=1;i<N-1;i++)pushTri(P,C,r0[0],r0[i+1],r0[i],dk);
+  const pan=(ph,x0,x1,x2,x3,ra,rb,c)=>{const u=[0,Math.cos(ph),Math.sin(ph)],
+    p=(x,r)=>[x,u[1]*r,u[2]*r];
+    pushTri(P,C,p(x0,ra),p(x1,ra),p(x2,rb),c);pushTri(P,C,p(x0,ra),p(x2,rb),p(x3,rb),c)};
   for(let k=0;k<4;k++){const ph=k*Math.PI/2;
-    panel(ph,-1,-.5,-.62,-1,R,R+.34,fin);
-    panel(ph,.06,.30,.27,.10,R,R+.17,can)}
+    pan(ph,-1,-.5,-.62,-1,R,R+.34,fn);pan(ph,.06,.30,.27,.10,R,R+.17,cn)}
   return{pos:new Float32Array(P),col:new Float32Array(C),n:P.length/6};
 }
-/* STL: binary detected by exact byte-length match, else ASCII.
-   Normals are recomputed from geometry — the stored ones are routinely wrong. */
+/* Binary STL detected by exact byte-length match; normals recomputed from
+   geometry because the ones stored in STL files are routinely wrong. */
 function parseSTL(buf){
-  const dv=new DataView(buf);
+  const dv=new DataView(buf),col=[.60,.63,.66];
   if(buf.byteLength>=84){
     const n=dv.getUint32(80,true);
     if(84+n*50===buf.byteLength){
-      const P=[],C=[],col=[.66,.69,.72];
+      const P=[],C=[];
       for(let i=0;i<n;i++){const o=84+i*50,v=[];
         for(let k=0;k<3;k++)v.push([dv.getFloat32(o+12+k*12,true),
           dv.getFloat32(o+16+k*12,true),dv.getFloat32(o+20+k*12,true)]);
         pushTri(P,C,v[0],v[1],v[2],col)}
-      return{pos:new Float32Array(P),col:new Float32Array(C),n:P.length/6};
-    }
+      return{pos:new Float32Array(P),col:new Float32Array(C),n:P.length/6}}
   }
-  const txt=new TextDecoder().decode(buf),P=[],C=[],col=[.66,.69,.72],v=[];
+  const t=new TextDecoder().decode(buf),P=[],C=[],v=[];
   const re=/vertex\s+(-?[\d.eE+-]+)\s+(-?[\d.eE+-]+)\s+(-?[\d.eE+-]+)/g;
-  let m; while((m=re.exec(txt))){v.push([+m[1],+m[2],+m[3]]);
+  let m;while((m=re.exec(t))){v.push([+m[1],+m[2],+m[3]]);
     if(v.length===3){pushTri(P,C,v[0],v[1],v[2],col);v.length=0}}
-  if(!P.length) throw new Error('no triangles found');
+  if(!P.length)throw new Error('no triangles found');
   return{pos:new Float32Array(P),col:new Float32Array(C),n:P.length/6};
 }
-/* Centre on the bounding box and normalise the longest axis to 2 units. */
 function fitMesh(m){
   const lo=[1e30,1e30,1e30],hi=[-1e30,-1e30,-1e30];
   for(let i=0;i<m.pos.length;i+=6)for(let k=0;k<3;k++){
     lo[k]=Math.min(lo[k],m.pos[i+k]);hi[k]=Math.max(hi[k],m.pos[i+k])}
-  const c=[0,1,2].map(k=>(lo[k]+hi[k])/2);
-  const s=2/Math.max(hi[0]-lo[0],hi[1]-lo[1],hi[2]-lo[2],1e-6);
-  m.centre=c;m.scale=s;return m;
+  m.centre=[0,1,2].map(k=>(lo[k]+hi[k])/2);
+  m.scale=2/Math.max(hi[0]-lo[0],hi[1]-lo[1],hi[2]-lo[2],1e-6);
+  return m;
 }
-/* Rotation taking the chosen model axis onto body +X, det = +1 by construction. */
-function alignMat(idx){
-  const AX=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]],r0=AX[idx];
+/* Proper rotation (det +1), not an axis swap — a swap silently mirrors. */
+function alignMat(i){
+  const AX=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]],r0=AX[i];
   const t=Math.abs(r0[0])<.9?[1,0,0]:[0,0,1];
   const r1=nrm(crs(r0,t)),r2=crs(r0,r1);
-  return new Float32Array([r0[0],r1[0],r2[0],0, r0[1],r1[1],r2[1],0,
-                           r0[2],r1[2],r2[2],0, 0,0,0,1]);
+  return new Float32Array([r0[0],r1[0],r2[0],0,r0[1],r1[1],r2[1],0,
+    r0[2],r1[2],r2[2],0,0,0,0,1]);
 }
 
-/* ═══════════════════════════════════════════════════════════════════ WebGL */
-const glc=$('#gl');
-const gl=glc.getContext('webgl',{antialias:true,alpha:false});
-let prog,buf,mesh,meshIsSTL=false,lineBuf,lineN;
-let cam={yaw:-.9,pitch:.30,dist:5.0};
-
+/* ═════════════════════════════════════════════════════════════════ WebGL */
+const glc=$('#gl'),gl=glc.getContext('webgl',{antialias:true,alpha:false});
+let prog,buf,mesh,meshSTL=false,lineBuf,lineN,cam={yaw:-.9,pitch:.3,dist:4.8};
 const VS=`attribute vec3 aP;attribute vec3 aN;attribute vec3 aC;
 uniform mat4 uMVP,uMV;uniform mat3 uNM;varying vec3 vN,vP,vC;
 void main(){vN=uNM*aN;vP=(uMV*vec4(aP,1.)).xyz;vC=aC;gl_Position=uMVP*vec4(aP,1.);}`;
 const FS=`precision mediump float;varying vec3 vN,vP,vC;uniform float uFlat;
 void main(){
   if(uFlat>.5){gl_FragColor=vec4(vC,1.);return;}
-  vec3 n=normalize(vN); if(!gl_FrontFacing) n=-n;
-  float k=max(dot(n,normalize(vec3(.35,.55,.75))),0.)*.8
-        + max(dot(n,normalize(vec3(-.5,-.3,.2))),0.)*.18;
-  float rim=pow(1.-max(dot(n,normalize(-vP)),0.),3.)*.35;
-  gl_FragColor=vec4(vC*(.20+k)+vec3(.30,.42,.55)*rim,1.);}`;
-
-function shader(t,src){const s=gl.createShader(t);gl.shaderSource(s,src);
-  gl.compileShader(s);
-  if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(s));
-  return s}
-
+  vec3 n=normalize(vN);if(!gl_FrontFacing)n=-n;
+  float k=max(dot(n,normalize(vec3(.35,.55,.75))),0.)*.85
+        +max(dot(n,normalize(vec3(-.5,-.3,.2))),0.)*.15;
+  float rim=pow(1.-max(dot(n,normalize(-vP)),0.),3.)*.30;
+  gl_FragColor=vec4(vC*(.14+k)+vec3(.24,.34,.44)*rim,1.);}`;
+function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);
+  if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));
+  return o}
 function initGL(){
   prog=gl.createProgram();
-  gl.attachShader(prog,shader(gl.VERTEX_SHADER,VS));
-  gl.attachShader(prog,shader(gl.FRAGMENT_SHADER,FS));
+  gl.attachShader(prog,sh(gl.VERTEX_SHADER,VS));
+  gl.attachShader(prog,sh(gl.FRAGMENT_SHADER,FS));
   gl.linkProgram(prog);gl.useProgram(prog);
   buf=gl.createBuffer();lineBuf=gl.createBuffer();
-  gl.enable(gl.DEPTH_TEST);gl.clearColor(.051,.063,.078,1);
-
-  /* ground grid + world axes, built once */
-  const L=[],G=2.4,st=G/6,gc=[.105,.125,.145],ax=[.145,.175,.205];
-  for(let i=-6;i<=6;i++){const t=i*st,c=i?gc:ax;
-    L.push(t,-G,0,0,0,1,...c, t,G,0,0,0,1,...c);
-    L.push(-G,t,0,0,0,1,...c, G,t,0,0,0,1,...c)}
-  const A=(v,c)=>L.push(0,0,0,0,0,1,...c, ...v,0,0,1,...c);
-  A([1.7,0,0],[.42,.20,.20]);A([0,1.7,0],[.20,.40,.26]);A([0,0,1.9],[.22,.32,.48]);
+  gl.enable(gl.DEPTH_TEST);gl.clearColor(0,0,0,1);
+  const L=[],G=2.4,st=G/6,gc=[.075,.075,.075],ac=[.13,.13,.13];
+  for(let i=-6;i<=6;i++){const t=i*st,c=i?gc:ac;
+    L.push(t,-G,0,0,0,1,...c,t,G,0,0,0,1,...c);
+    L.push(-G,t,0,0,0,1,...c,G,t,0,0,0,1,...c)}
+  const A=(v,c)=>L.push(0,0,0,0,0,1,...c,...v,0,0,1,...c);
+  A([1.7,0,0],[.30,.13,.12]);A([0,1.7,0],[.13,.26,.16]);A([0,0,1.9],[.14,.20,.30]);
   gl.bindBuffer(gl.ARRAY_BUFFER,lineBuf);
   gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(L),gl.STATIC_DRAW);
   lineN=L.length/9;
   setMesh(fitMesh(rocketMesh()),false);
 }
-function setMesh(m,isStl){
-  mesh=m;meshIsSTL=isStl;
-  const inter=new Float32Array(m.n*9);
-  for(let i=0;i<m.n;i++){
-    inter.set(m.pos.subarray(i*6,i*6+6),i*9);
-    inter.set(m.col.subarray(i*3,i*3+3),i*9+6);
-  }
-  gl.bindBuffer(gl.ARRAY_BUFFER,buf);
-  gl.bufferData(gl.ARRAY_BUFFER,inter,gl.STATIC_DRAW);
+function setMesh(m,stl){
+  mesh=m;meshSTL=stl;
+  const it=new Float32Array(m.n*9);
+  for(let i=0;i<m.n;i++){it.set(m.pos.subarray(i*6,i*6+6),i*9);
+    it.set(m.col.subarray(i*3,i*3+3),i*9+6)}
+  gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,it,gl.STATIC_DRAW);
 }
-function bindAttrs(stride){
-  for(const[name,size,off]of[['aP',3,0],['aN',3,3],['aC',3,6]]){
-    const l=gl.getAttribLocation(prog,name);
-    gl.enableVertexAttribArray(l);
-    gl.vertexAttribPointer(l,size,gl.FLOAT,false,stride*4,off*4);
-  }
-}
+function attrs(){for(const[n,s,o]of[['aP',3,0],['aN',3,3],['aC',3,6]]){
+  const l=gl.getAttribLocation(prog,n);gl.enableVertexAttribArray(l);
+  gl.vertexAttribPointer(l,s,gl.FLOAT,false,36,o*4)}}
 function drawGL(){
-  const dpr=Math.min(devicePixelRatio||1,2);
-  const w=glc.clientWidth,h=glc.clientHeight;
+  const dpr=Math.min(devicePixelRatio||1,2),w=glc.clientWidth,h=glc.clientHeight;
   if(!w||!h)return;
   if(glc.width!==w*dpr||glc.height!==h*dpr){glc.width=w*dpr;glc.height=h*dpr}
   gl.viewport(0,0,glc.width,glc.height);
   gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
-
-  const cp=Math.cos(cam.pitch),eye=[
-    cam.dist*cp*Math.cos(cam.yaw),cam.dist*cp*Math.sin(cam.yaw),cam.dist*Math.sin(cam.pitch)];
-  const V=M.look(eye,[0,0,.1],[0,0,1]);
-  const P=M.persp(.72,w/h,.1,60);
-  const VP=M.mul(P,V);
+  const cp=Math.cos(cam.pitch),eye=[cam.dist*cp*Math.cos(cam.yaw),
+    cam.dist*cp*Math.sin(cam.yaw),cam.dist*Math.sin(cam.pitch)];
+  const V=M.look(eye,[0,0,.1],[0,0,1]),VP=M.mul(M.persp(.72,w/h,.1,60),V);
   const uMVP=gl.getUniformLocation(prog,'uMVP'),uMV=gl.getUniformLocation(prog,'uMV'),
-        uNM=gl.getUniformLocation(prog,'uNM'),uF=gl.getUniformLocation(prog,'uFlat');
-
-  gl.bindBuffer(gl.ARRAY_BUFFER,lineBuf);bindAttrs(9);
+    uNM=gl.getUniformLocation(prog,'uNM'),uF=gl.getUniformLocation(prog,'uFlat');
+  gl.bindBuffer(gl.ARRAY_BUFFER,lineBuf);attrs();
   gl.uniform1f(uF,1);gl.uniformMatrix4fv(uMVP,false,VP);
   gl.uniformMatrix4fv(uMV,false,V);gl.uniformMatrix3fv(uNM,false,M.m3(V));
   gl.drawArrays(gl.LINES,0,lineN);
-
-  const Rq=M.quat(S.q);
-  const A=meshIsSTL?alignMat(+$('#noseAxis').value):alignMat(0);
+  const Rq=M.quat(S.q),A=alignMat(meshSTL?+$('#noseAxis').value:0);
   const model=M.mul(M.mul(Rq,A),M.mul(M.scale(mesh.scale),M.trans(mesh.centre.map(v=>-v))));
-  const MV=M.mul(V,model);
-  gl.bindBuffer(gl.ARRAY_BUFFER,buf);bindAttrs(9);
+  gl.bindBuffer(gl.ARRAY_BUFFER,buf);attrs();
   gl.uniform1f(uF,0);gl.uniformMatrix4fv(uMVP,false,M.mul(VP,model));
-  gl.uniformMatrix4fv(uMV,false,MV);gl.uniformMatrix3fv(uNM,false,M.m3(M.mul(Rq,A)));
+  gl.uniformMatrix4fv(uMV,false,M.mul(V,model));
+  gl.uniformMatrix3fv(uNM,false,M.m3(M.mul(Rq,A)));
   gl.drawArrays(gl.TRIANGLES,0,mesh.n);
 }
 let drag=null;
@@ -656,7 +530,7 @@ glc.addEventListener('pointermove',e=>{if(!drag)return;
 glc.addEventListener('wheel',e=>{e.preventDefault();
   cam.dist=Math.max(2.2,Math.min(16,cam.dist+e.deltaY*.004))},{passive:false});
 
-/* ═══════════════════════════════════════════════════════════════════ 2D kit */
+/* ════════════════════════════════════════════════════════════════ 2D kit */
 function fit(c){
   const dpr=Math.min(devicePixelRatio||1,2),w=c.clientWidth,h=c.clientHeight;
   if(!w||!h)return null;
@@ -664,237 +538,275 @@ function fit(c){
   const x=c.getContext('2d');x.setTransform(dpr,0,0,dpr,0,0);x.clearRect(0,0,w,h);
   return{x,w,h};
 }
-const MONO='11px ui-monospace,"SF Mono",Consolas,monospace';
+function niceStep(r,t){const raw=r/t,e=Math.pow(10,Math.floor(Math.log10(raw))),m=raw/e;
+  return(m<1.5?1:m<3?2:m<7?5:10)*e}
 
-/* ────────────────────────────────────────────────── attitude indicator */
+/* ───────────────────────────────────────────── attitude indicator */
 function drawAI(){
   const f=fit($('#gAi'));if(!f)return;const{x,w,h}=f;
-  const cx=w/2,cy=h/2+6,R=Math.min(w,h)/2-24;
-  /* Rocket telemetry gives tilt-from-vertical; a cockpit AI wants elevation
+  const cx=w/2,cy=h/2,R=Math.min(w,h)/2-16;
+  /* Rocket telemetry is tilt-from-vertical; a cockpit AI wants elevation
      above the horizon. They are complements. Bank is roll about the nose. */
-  const pitch=Math.max(-90,Math.min(90,90-S.tilt)), bank=S.roll;
-  const PPD=R/48;
+  const pitch=Math.max(-90,Math.min(90,90-S.tilt)),bank=S.roll,PPD=R/46;
   x.save();x.beginPath();x.arc(cx,cy,R,0,7);x.clip();
-  x.translate(cx,cy);x.rotate(-bank*Math.PI/180);x.translate(0,pitch*PPD);
-  x.fillStyle='#1d3c56';x.fillRect(-2*R,-4*R,4*R,4*R);
-  x.fillStyle='#3d3222';x.fillRect(-2*R,0,4*R,4*R);
-  x.strokeStyle='#c8d2da';x.lineWidth=1.2;
+  x.translate(cx,cy);x.rotate(-bank*D2R);x.translate(0,pitch*PPD);
+  x.fillStyle='#101820';x.fillRect(-2*R,-4*R,4*R,4*R);
+  x.fillStyle='#1c1712';x.fillRect(-2*R,0,4*R,4*R);
+  x.strokeStyle='#9aa0a6';x.lineWidth=1;
   x.beginPath();x.moveTo(-2*R,0);x.lineTo(2*R,0);x.stroke();
-  x.strokeStyle='#7e8a94';x.lineWidth=1;x.font='9px ui-monospace,monospace';
-  x.fillStyle='#9aa5ae';x.textAlign='center';
-  for(let p=-80;p<=80;p+=10){ if(!p)continue;
-    const y=-p*PPD,ln=(p%20===0)?R*.42:R*.22;
+  x.strokeStyle='#454b51';x.font='8px ui-monospace,monospace';
+  x.fillStyle='#6b7178';x.textAlign='center';
+  for(let p=-80;p<=80;p+=10){if(!p)continue;
+    const y=-p*PPD,ln=(p%20===0)?R*.40:R*.20;
     x.beginPath();x.moveTo(-ln,y);x.lineTo(ln,y);x.stroke();
-    if(p%20===0){x.fillText(Math.abs(p),-ln-11,y+3);x.fillText(Math.abs(p),ln+11,y+3)} }
+    if(p%20===0)x.fillText(Math.abs(p),ln+10,y+3)}
   x.restore();
-  /* bank scale */
-  x.strokeStyle='#5b656e';x.lineWidth=1;
+  x.strokeStyle='#3a3a3a';x.lineWidth=1;
   for(const a of[-60,-45,-30,-20,-10,0,10,20,30,45,60]){
-    const r=(a%30===0||a===0)?9:5,t=(-90+a)*Math.PI/180;
-    x.beginPath();
-    x.moveTo(cx+Math.cos(t)*R,cy+Math.sin(t)*R);
-    x.lineTo(cx+Math.cos(t)*(R-r),cy+Math.sin(t)*(R-r));x.stroke();
-  }
-  x.strokeStyle='#2b333c';x.lineWidth=1;x.beginPath();x.arc(cx,cy,R,0,7);x.stroke();
-  /* bank pointer */
-  const bt=(-90-bank)*Math.PI/180;
-  x.fillStyle='#4cc2ff';x.beginPath();
-  x.moveTo(cx+Math.cos(bt)*(R-10),cy+Math.sin(bt)*(R-10));
-  x.lineTo(cx+Math.cos(bt-.05)*(R-19),cy+Math.sin(bt-.05)*(R-19));
-  x.lineTo(cx+Math.cos(bt+.05)*(R-19),cy+Math.sin(bt+.05)*(R-19));
+    const r=(a%30===0)?7:4,t=(-90+a)*D2R;
+    x.beginPath();x.moveTo(cx+Math.cos(t)*R,cy+Math.sin(t)*R);
+    x.lineTo(cx+Math.cos(t)*(R-r),cy+Math.sin(t)*(R-r));x.stroke()}
+  x.strokeStyle='#242424';x.beginPath();x.arc(cx,cy,R,0,7);x.stroke();
+  const bt=(-90-bank)*D2R;
+  x.fillStyle='#ececec';x.beginPath();
+  x.moveTo(cx+Math.cos(bt)*(R-8),cy+Math.sin(bt)*(R-8));
+  x.lineTo(cx+Math.cos(bt-.055)*(R-16),cy+Math.sin(bt-.055)*(R-16));
+  x.lineTo(cx+Math.cos(bt+.055)*(R-16),cy+Math.sin(bt+.055)*(R-16));
   x.closePath();x.fill();
-  /* fixed vehicle reference */
-  x.strokeStyle='#e8eef3';x.lineWidth=2;x.beginPath();
-  x.moveTo(cx-R*.42,cy);x.lineTo(cx-R*.14,cy);x.moveTo(cx-R*.14,cy);x.lineTo(cx,cy+7);
-  x.lineTo(cx+R*.14,cy);x.moveTo(cx+R*.14,cy);x.lineTo(cx+R*.42,cy);x.stroke();
-  $('#rdAi').textContent=`${S.tilt.toFixed(0)}° tilt · ${S.roll.toFixed(0)}° roll`;
+  x.strokeStyle='#ececec';x.lineWidth=1.6;x.beginPath();
+  x.moveTo(cx-R*.40,cy);x.lineTo(cx-R*.13,cy);x.lineTo(cx,cy+6);
+  x.lineTo(cx+R*.13,cy);x.lineTo(cx+R*.40,cy);x.stroke();
+  $('#rdAi').textContent=`${S.tilt.toFixed(0)}° · ${S.roll.toFixed(0)}°`;
 }
-/* ─────────────────────────────────────────────────────────── round dial */
+/* ─────────────────────────────────────────────────────── round dial */
 function dial(cv,val,cfg){
   const f=fit(cv);if(!f)return;const{x,w,h}=f;
-  const cx=w/2,cy=h/2+6,R=Math.min(w,h)/2-24;
-  x.strokeStyle='#232a31';x.lineWidth=1;x.beginPath();x.arc(cx,cy,R,0,7);x.stroke();
-  x.font='9.5px ui-monospace,monospace';x.textAlign='center';x.textBaseline='middle';
+  const cx=w/2,cy=h/2,R=Math.min(w,h)/2-16;
+  x.strokeStyle='#1c1c1c';x.lineWidth=1;x.beginPath();x.arc(cx,cy,R,0,7);x.stroke();
+  x.font='8.5px ui-monospace,monospace';x.textAlign='center';x.textBaseline='middle';
   for(const t of cfg.ticks){
-    const a=cfg.ang(t.v)-Math.PI/2, maj=t.label!==undefined;
-    x.strokeStyle=maj?'#78838d':'#3a434c';x.lineWidth=maj?1.4:1;
-    const r0=R-(maj?11:6);
+    const a=cfg.ang(t.v)-Math.PI/2,maj=t.label!==undefined;
+    x.strokeStyle=maj?'#5e5e5e':'#2a2a2a';x.lineWidth=1;
+    const r0=R-(maj?9:5);
     x.beginPath();x.moveTo(cx+Math.cos(a)*r0,cy+Math.sin(a)*r0);
     x.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R);x.stroke();
-    if(maj){x.fillStyle='#8b949c';
-      x.fillText(t.label,cx+Math.cos(a)*(R-23),cy+Math.sin(a)*(R-23))}
-  }
-  const a=cfg.ang(cfg.clamp(val))-Math.PI/2;
-  x.strokeStyle=cfg.color;x.lineWidth=2.2;x.lineCap='round';
-  x.beginPath();x.moveTo(cx-Math.cos(a)*R*.13,cy-Math.sin(a)*R*.13);
-  x.lineTo(cx+Math.cos(a)*(R-15),cy+Math.sin(a)*(R-15));x.stroke();
-  x.fillStyle='#0b0d10';x.beginPath();x.arc(cx,cy,4.5,0,7);x.fill();
-  x.strokeStyle=cfg.color;x.lineWidth=1.2;x.beginPath();x.arc(cx,cy,4.5,0,7);x.stroke();
+    if(maj){x.fillStyle='#6f6f6f';
+      x.fillText(t.label,cx+Math.cos(a)*(R-19),cy+Math.sin(a)*(R-19))}}
+  const a=cfg.ang(val)-Math.PI/2;
+  x.strokeStyle=cfg.color;x.lineWidth=1.8;x.lineCap='round';
+  x.beginPath();x.moveTo(cx-Math.cos(a)*R*.12,cy-Math.sin(a)*R*.12);
+  x.lineTo(cx+Math.cos(a)*(R-12),cy+Math.sin(a)*(R-12));x.stroke();
+  x.fillStyle='#000';x.beginPath();x.arc(cx,cy,3.6,0,7);x.fill();
+  x.strokeStyle=cfg.color;x.lineWidth=1;x.beginPath();x.arc(cx,cy,3.6,0,7);x.stroke();
 }
 function drawAlt(){
-  const v=S.alt==null?0:S.alt;
-  const ticks=[];for(let i=0;i<10;i++)ticks.push({v:i*100,label:i});
+  const v=S.alt==null?0:S.alt,ticks=[];
+  for(let i=0;i<10;i++)ticks.push({v:i*100,label:i});
   for(let i=0;i<50;i++)if(i%5)ticks.push({v:i*20});
-  dial($('#gAlt'),((v%1000)+1000)%1000,{
-    ticks,ang:t=>t/1000*2*Math.PI,clamp:t=>t,color:'#4cc2ff'});
-  $('#rdAlt').textContent=S.alt==null?'—':S.alt.toFixed(1)+' m';
+  dial($('#gAlt'),((v%1000)+1000)%1000,{ticks,ang:t=>t/1000*2*Math.PI,color:'#ececec'});
+  $('#rdAlt').textContent=S.alt==null?'—':S.alt.toFixed(1);
 }
-/* Compressed VSI scale — linear would bury everything below 20 m/s. */
+/* Compressed scale — linear ±200 m/s would bury everything under 20. */
 const vsiAng=v=>{const s=Math.sign(v),m=Math.min(Math.abs(v),200);
   return s*Math.pow(m/200,.55)*Math.PI*.82};
 function drawVs(){
-  const v=S.vv==null?0:S.vv;
-  const ticks=[];
-  for(const t of[0,5,20,50,100,200]){
-    ticks.push({v:t,label:t});if(t)ticks.push({v:-t,label:t})}
+  const v=S.vv==null?0:S.vv,ticks=[];
+  for(const t of[0,5,20,50,100,200]){ticks.push({v:t,label:t});if(t)ticks.push({v:-t,label:t})}
   for(const t of[2,10,35,75,150]){ticks.push({v:t});ticks.push({v:-t})}
-  dial($('#gVs'),v,{ticks,ang:vsiAng,clamp:t=>t,
-    color:v>1?'#4cc98a':v<-1?'#e0a63c':'#8b949c'});
-  $('#rdVs').textContent=S.vv==null?'—':S.vv.toFixed(1)+' m/s';
+  dial($('#gVs'),v,{ticks,ang:vsiAng,
+    color:v>1?'#5ac8fa':v<-1?'#d99a2b':'#ececec'});
+  $('#rdVs').textContent=S.vv==null?'—':S.vv.toFixed(1);
 }
 
-/* ───────────────────────────────────────────────────────────── charts */
-function niceStep(r,target){
-  const raw=r/target,e=Math.pow(10,Math.floor(Math.log10(raw))),m=raw/e;
-  return (m<1.5?1:m<3?2:m<7?5:10)*e;
+/* ═════════════════════════════════════════════ satellite slippy map
+   Hand-rolled Web Mercator tiles. Esri World Imagery needs no API key.
+   On HiDPI we fetch one zoom level deeper and draw at half size, so
+   imagery lands at native device resolution instead of upscaled. */
+const TILE='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/';
+const tiles=new Map();
+let mapZ=17,follow=true,mapCentre=null,mapPan=null,tileErrors=0;
+const DEFAULT_CENTRE={lat:40.1164,lon:-88.2434};   // Champaign IL, until a fix arrives
+
+function tileImg(z,x,y){
+  const k=z+'/'+x+'/'+y;let t=tiles.get(k);
+  if(!t){
+    t=new Image();t.ok=false;
+    t.onload=()=>{t.ok=true};t.onerror=()=>{t.bad=true;tileErrors++};
+    t.src=TILE+z+'/'+y+'/'+x;               // Esri order is z/row/col
+    tiles.set(k,t);
+    if(tiles.size>512){let i=0;for(const kk of tiles.keys()){if(i++>128)break;tiles.delete(kk)}}
+  }
+  return t;
 }
+function merc(lat,lon,world){
+  const s=Math.max(-.9999,Math.min(.9999,Math.sin(lat*D2R)));
+  return[(lon+180)/360*world,(.5-Math.log((1+s)/(1-s))/(4*Math.PI))*world];
+}
+function drawMap(){
+  const f=fit($('#map'));if(!f)return;const{x,w,h}=f;
+  x.fillStyle='#000';x.fillRect(0,0,w,h);
+
+  const centre=mapCentre||(S.lat?{lat:S.lat,lon:S.lon}:DEFAULT_CENTRE);
+  const k=(devicePixelRatio>1.3&&mapZ<19)?2:1;      // 1 or 2 extra tile levels
+  const tz=mapZ+(k===2?1:0);
+  const world=256*Math.pow(2,tz);
+  const c=merc(centre.lat,centre.lon,world);
+  const ox=c[0]/k-w/2, oy=c[1]/k-h/2, ts=256/k;
+  const P=(lat,lon)=>{const p=merc(lat,lon,world);return[p[0]/k-ox,p[1]/k-oy]};
+
+  const x0=Math.floor(ox/ts),x1=Math.floor((ox+w)/ts);
+  const y0=Math.floor(oy/ts),y1=Math.floor((oy+h)/ts);
+  const nT=Math.pow(2,tz);
+  let drew=0;
+  for(let ty=y0;ty<=y1;ty++){
+    if(ty<0||ty>=nT)continue;
+    for(let tx=x0;tx<=x1;tx++){
+      const wx=((tx%nT)+nT)%nT;
+      const im=tileImg(tz,wx,ty);
+      if(im.ok){x.drawImage(im,tx*ts-ox,ty*ts-oy,ts,ts);drew++}
+    }
+  }
+  if(!drew){
+    x.fillStyle='#3a3a3a';x.font='11px ui-monospace,monospace';x.textAlign='center';
+    x.fillText(tileErrors?'imagery unavailable — offline':'loading imagery…',w/2,h/2);
+  }
+
+  /* pad, track and vehicle overlay */
+  if(pad){
+    const p=P(pad.lat,pad.lon);
+    x.strokeStyle='rgba(255,255,255,.75)';x.lineWidth=1;
+    x.beginPath();x.moveTo(p[0]-6,p[1]);x.lineTo(p[0]+6,p[1]);
+    x.moveTo(p[0],p[1]-6);x.lineTo(p[0],p[1]+6);x.stroke();
+  }
+  if(track.length>1){
+    x.strokeStyle='rgba(90,200,250,.9)';x.lineWidth=1.6;x.beginPath();
+    track.forEach((t,i)=>{const p=P(t.lat,t.lon);i?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1])});
+    x.stroke();
+  }
+  if(S.lat){
+    const p=P(S.lat,S.lon);
+    x.fillStyle='#5ac8fa';x.beginPath();x.arc(p[0],p[1],4,0,7);x.fill();
+    x.strokeStyle='#000';x.lineWidth=1.2;x.beginPath();x.arc(p[0],p[1],4,0,7);x.stroke();
+    x.strokeStyle='rgba(90,200,250,.35)';x.lineWidth=1;
+    x.beginPath();x.arc(p[0],p[1],10,0,7);x.stroke();
+  }
+  /* scale bar */
+  const mpp=156543.03392*Math.cos(centre.lat*D2R)/Math.pow(2,mapZ);
+  const target=niceStep(mpp*110,1);
+  x.strokeStyle='rgba(255,255,255,.5)';x.lineWidth=1;
+  const px=target/mpp;
+  x.beginPath();x.moveTo(12,h-26);x.lineTo(12+px,h-26);
+  x.moveTo(12,h-30);x.lineTo(12,h-22);x.moveTo(12+px,h-30);x.lineTo(12+px,h-22);x.stroke();
+  x.fillStyle='rgba(255,255,255,.6)';x.font='9.5px ui-monospace,monospace';
+  x.textAlign='left';
+  x.fillText(target>=1000?(target/1000)+' km':target+' m',12,h-32);
+}
+$('#map').addEventListener('pointerdown',e=>{
+  mapPan=[e.clientX,e.clientY];follow=false;$('#bFollow').classList.remove('on');
+  $('#map').setPointerCapture(e.pointerId)});
+$('#map').addEventListener('pointerup',()=>mapPan=null);
+$('#map').addEventListener('pointermove',e=>{
+  if(!mapPan)return;
+  const c=mapCentre||(S.lat?{lat:S.lat,lon:S.lon}:DEFAULT_CENTRE);
+  const world=256*Math.pow(2,mapZ),p=merc(c.lat,c.lon,world);
+  p[0]-=e.clientX-mapPan[0];p[1]-=e.clientY-mapPan[1];
+  const lon=p[0]/world*360-180;
+  const n=Math.PI-2*Math.PI*p[1]/world;
+  const lat=180/Math.PI*Math.atan(.5*(Math.exp(n)-Math.exp(-n)));
+  mapCentre={lat,lon};mapPan=[e.clientX,e.clientY]});
+$('#map').addEventListener('wheel',e=>{e.preventDefault();
+  mapZ=Math.max(2,Math.min(19,mapZ+(e.deltaY<0?1:-1)))},{passive:false});
+
+/* ═══════════════════════════════════════════════════════════════ charts */
 function chart(cv,series,opt){
   const f=fit(cv);if(!f)return;const{x,w,h}=f;
-  const L=52,Rp=14,T=26,B=20, pw=w-L-Rp, ph=h-T-B;
+  const L=50,Rp=14,T=26,B=20,pw=w-L-Rp,ph=h-T-B;
   if(pw<10||ph<10)return;
-  const win=+$('#win').value;
-  const now=H.t.length?H.t[H.t.length-1]:0;
-  const t0=win?Math.max(0,now-win):(H.t[0]||0), t1=Math.max(now,t0+1);
-
+  const win=+$('#win').value,now=H.t.length?H.t[H.t.length-1]:0;
+  const t0=win?Math.max(0,now-win):(H.t[0]||0),t1=Math.max(now,t0+1);
   let lo=Infinity,hi=-Infinity,any=false;
   for(const s of series)for(let i=0;i<H.t.length;i++){
     if(H.t[i]<t0)continue;const v=s.d[i];
     if(v==null||!isFinite(v))continue;
     lo=Math.min(lo,v);hi=Math.max(hi,v);any=true}
-  if(!any){lo=opt.lo??0;hi=opt.hi??1}
+  if(!any){lo=0;hi=1}
   if(hi-lo<(opt.min??1)){const c=(hi+lo)/2,m=(opt.min??1)/2;lo=c-m;hi=c+m}
-  const padv=(hi-lo)*.10;lo-=padv;hi+=padv;
-
-  const X=t=>L+(t-t0)/(t1-t0)*pw, Y=v=>T+ph-(v-lo)/(hi-lo)*ph;
-
-  x.strokeStyle='#171c22';x.lineWidth=1;
-  x.font='9.5px ui-monospace,monospace';x.fillStyle='#565f68';
-  x.textAlign='right';x.textBaseline='middle';
+  const p=(hi-lo)*.10;lo-=p;hi+=p;
+  const X=t=>L+(t-t0)/(t1-t0)*pw,Y=v=>T+ph-(v-lo)/(hi-lo)*ph;
+  x.strokeStyle='#111';x.lineWidth=1;x.font='9px ui-monospace,monospace';
+  x.fillStyle='#4a4a4a';x.textAlign='right';x.textBaseline='middle';
   const gs=niceStep(hi-lo,4);
   for(let v=Math.ceil(lo/gs)*gs;v<=hi;v+=gs){
     const y=Math.round(Y(v))+.5;
     x.beginPath();x.moveTo(L,y);x.lineTo(L+pw,y);x.stroke();
     x.fillText(Math.abs(v)<1e-9?'0':(gs<1?v.toFixed(1):v.toFixed(0)),L-8,y)}
-  const ts=niceStep(t1-t0,5);
-  x.textAlign='center';x.textBaseline='top';
+  const ts=niceStep(t1-t0,5);x.textAlign='center';x.textBaseline='top';
   for(let t=Math.ceil(t0/ts)*ts;t<=t1;t+=ts){
     const px=Math.round(X(t))+.5;
     x.beginPath();x.moveTo(px,T);x.lineTo(px,T+ph);x.stroke();
     x.fillText(t.toFixed(ts<1?1:0)+'s',px,T+ph+5)}
-  x.strokeStyle='#242b32';x.beginPath();
+  x.strokeStyle='#1c1c1c';x.beginPath();
   x.moveTo(L,T);x.lineTo(L,T+ph);x.lineTo(L+pw,T+ph);x.stroke();
-
-  /* decimate to at most ~2 points per device pixel column */
   const step=Math.max(1,Math.floor(H.t.length/(pw*2)));
   for(const s of series){
-    x.strokeStyle=s.c;x.lineWidth=1.35;x.beginPath();let pen=false,prev=null;
+    x.strokeStyle=s.c;x.lineWidth=1.3;x.beginPath();let pen=false,prev=null;
     for(let i=0;i<H.t.length;i+=step){
       if(H.t[i]<t0)continue;const v=s.d[i];
       if(v==null||!isFinite(v)){pen=false;prev=null;continue}
-      /* Angles wrap at ±180. Without lifting the pen a spinning vehicle draws
-         a full-height vertical line on every revolution. */
+      /* Angles wrap at ±180 — lift the pen or a spinning vehicle draws a
+         full-height vertical line every revolution. */
       if(s.wrap&&prev!==null&&Math.abs(v-prev)>s.wrap)pen=false;
-      prev=v;
-      const px=X(H.t[i]),py=Y(v);
+      prev=v;const px=X(H.t[i]),py=Y(v);
       pen?x.lineTo(px,py):x.moveTo(px,py);pen=true}
-    x.stroke();
-  }
+    x.stroke()}
 }
 
-/* ──────────────────────────────────────────────────────── ground track */
-function drawMap(){
-  const f=fit($('#map'));if(!f)return;const{x,w,h}=f;
-  const cx=w/2,cy=h/2,R=Math.min(w,h)/2-34;
-  let span=60;
-  if(track.length){let mx=0;for(const p of track)mx=Math.max(mx,Math.hypot(p[0],p[1]));
-    span=Math.max(60,mx*1.25)}
-  const sc=R/span, PX=(e,n)=>[cx+e*sc,cy-n*sc];
-
-  const ringStep=niceStep(span,3);
-  x.font='9.5px ui-monospace,monospace';x.textAlign='center';x.textBaseline='middle';
-  for(let r=ringStep;r<=span*1.02;r+=ringStep){
-    x.strokeStyle='#171c22';x.lineWidth=1;
-    x.beginPath();x.arc(cx,cy,r*sc,0,7);x.stroke();
-    x.fillStyle='#3f474f';x.fillText(r>=1000?(r/1000).toFixed(1)+'k':r+'m',cx,cy-r*sc-8)}
-  x.strokeStyle='#1c2229';x.beginPath();
-  x.moveTo(cx-R,cy);x.lineTo(cx+R,cy);x.moveTo(cx,cy-R);x.lineTo(cx,cy+R);x.stroke();
-  x.fillStyle='#565f68';x.font='10px ui-monospace,monospace';
-  x.fillText('N',cx,cy-R-16);x.fillText('S',cx,cy+R+16);
-  x.fillText('E',cx+R+14,cy);x.fillText('W',cx-R-14,cy);
-
-  if(track.length>1){
-    x.strokeStyle='#2f6f8f';x.lineWidth=1.3;x.beginPath();
-    track.forEach((p,i)=>{const q=PX(p[0],p[1]);i?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1])});
-    x.stroke();
-  }
-  x.strokeStyle='#7e8a94';x.lineWidth=1.2;
-  x.beginPath();x.moveTo(cx-6,cy);x.lineTo(cx+6,cy);
-  x.moveTo(cx,cy-6);x.lineTo(cx,cy+6);x.stroke();
-  if(track.length){
-    const p=track[track.length-1],q=PX(p[0],p[1]);
-    x.fillStyle='#4cc2ff';x.beginPath();x.arc(q[0],q[1],4,0,7);x.fill();
-    x.strokeStyle='rgba(76,194,255,.28)';x.lineWidth=1;
-    x.beginPath();x.arc(q[0],q[1],9,0,7);x.stroke();
-  }
-}
-
-/* ═══════════════════════════════════════════════════════════════ parsing */
+/* ══════════════════════════════════════════════════════════════ parsing */
 const RE_EV=/^#\s+(\d+)\s+([IWE])\s+(\S+)\s+v=(-?\d+)\s+n=(\d+)\s+first=(\d+)/;
 const RE_ST=/^#\s+(\d+)\s+I\s+STATS\s+(.+)$/;
 const NOTE={
-  IMU_DT_CLAMP:v=>`${(v/1000).toFixed(2)} ms sample interval rejected — filter substituted nominal dt`,
+  IMU_DT_CLAMP:v=>`${(v/1000).toFixed(2)} ms sample interval rejected`,
   LOOP_OVERRUN:v=>`${(v/1000).toFixed(2)} ms of loop work — an IMU sample was lost`,
   MAG_REJECT:v=>`|B| = ${(v/10).toFixed(1)} µT, outside the validity gate`,
   BARO_PAD_REF:v=>`pad pressure ${(v/100).toFixed(2)} hPa`,
   GPS_PAD_REF:v=>`pad altitude ${v} m MSL`,
-  GPS_NO_STREAM:v=>`${v} non-UBX bytes discarded — receiver talking, but not UBX`,
+  GPS_NO_STREAM:v=>`${v} non-UBX bytes discarded`,
   GPS_FIX_GAINED:v=>`${v} satellites`,
   GPS_FIX_LOST:v=>`fell back to fix type ${v}`,
   GPS_INIT_FAIL:v=>`init step ${v} failed`,
   IMU_TIMEOUT:v=>`${v} consecutive data-ready timeouts`,
   GYRO_CAL_OK:v=>`stationary after ${v} attempt${v>1?'s':''}`,
-  TELEM_DROP:v=>`${v} lines dropped — port slower than the telemetry rate`,
-  BOOT:v=>'reset cause: '+(['pin','power-on','software','IWDG','WWDG','brownout','low-power']
-        .filter((_,i)=>v&(1<<i)).join(' + ')||'unknown')
-};
+  TELEM_DROP:v=>`${v} lines dropped`,
+  BOOT:v=>'reset: '+(['pin','power-on','software','IWDG','WWDG','brownout','low-power']
+    .filter((_,i)=>v&(1<<i)).join(' + ')||'unknown')};
 
-function con(text,cls){
-  const el=$('#conout'),stick=el.scrollTop+el.clientHeight>=el.scrollHeight-24;
-  const d=document.createElement('div');if(cls)d.className=cls;d.textContent=text;
+function con(t,c){
+  const el=$('#cout'),stick=el.scrollTop+el.clientHeight>=el.scrollHeight-24;
+  const d=document.createElement('div');if(c)d.className=c;d.textContent=t;
   el.appendChild(d);
   while(el.childElementCount>500)el.removeChild(el.firstChild);
   if(stick)el.scrollTop=el.scrollHeight;
 }
-
+function pushFix(){
+  if(!(S.fix>=3&&S.lat))return;
+  if(!pad)pad={lat:S.lat,lon:S.lon};
+  const l=track[track.length-1];
+  if(!l||Math.abs(S.lat-l.lat)>3e-6||Math.abs(S.lon-l.lon)>3e-6)
+    track.push({lat:S.lat,lon:S.lon});
+}
 function onLine(raw){
   const s=raw.trim();if(!s)return;
   con(s,s[0]==='#'?'m':null);
-
   if(s[0]==='#'){
-    let m=s.match(RE_ST);
-    if(m){$('#statsLine').textContent=m[2];return}
+    let m=s.match(RE_ST);if(m){$('#stats').textContent=m[2];return}
     m=s.match(RE_EV);
-    if(m){
-      const[,ms,sev,name,val,n,first]=m;
-      events.set(name,{sev,name,val:+val,n:+n,first:+first,last:+ms});
-      renderEvents();
-    }
+    if(m){const[,ms,sev,name,val,n,first]=m;
+      events.set(name,{sev,name,val:+val,n:+n,first:+first,last:+ms});renderEvents()}
     return;
   }
   const f=s.split(/\s+/),v=f.map(Number);
   if(v.some(Number.isNaN))return;
   const t=(performance.now()-S.t0)/1000;
-
   if(f.length===15){
     S.tilt=v[1];S.roll=v[2];S.azi=v[3];S.alt=v[4];S.vv=v[5];S.aup=v[6];
     S.lat=v[7];S.lon=v[8];S.fix=v[9];S.nsat=v[10];
@@ -904,40 +816,30 @@ function onLine(raw){
     if(S.vv>S.maxUp)S.maxUp=S.vv;
     if(S.vv<S.maxDn)S.maxDn=S.vv;
     if(Math.abs(S.aup)>Math.abs(S.maxA))S.maxA=S.aup;
-    if(S.fix>=3&&S.lat){
-      if(!pad)pad={lat:S.lat,lon:S.lon};
-      const n=(S.lat-pad.lat)*111320,
-            e=(S.lon-pad.lon)*111320*Math.cos(pad.lat*Math.PI/180);
-      const l=track[track.length-1];
-      if(!l||Math.hypot(e-l[0],n-l[1])>.4)track.push([e,n]);
-    }
-    csv.push(f.join(','));
-    hist(t);
+    pushFix();csv.push(f.join(','));hist(t);
   }else if(f.length===8){
     S.accel=[v[1],v[2],v[3]];S.gyro=[v[4],v[5],v[6]];S.temp=v[7];S.rows++;
     if(S.src!=='flight'){const q=qFromAccel(S.accel);
-      if(q){S.q=q;S.src='accel';S.tilt=Math.acos(Math.max(-1,Math.min(1,noseOf(q)[2])))*180/Math.PI;
-        S.roll=0;S.azi=0}}
+      if(q){S.q=q;S.src='accel';
+        S.tilt=Math.acos(Math.max(-1,Math.min(1,noseOf(q)[2])))/D2R;S.roll=0;S.azi=0}}
     hist(t);
   }else if(f.length===5){S.mag=[v[1],v[2],v[3]];S.rows++}
 }
-
 function renderEvents(){
   const tb=$('#evb');
-  if(!events.size){tb.innerHTML='<tr><td colspan="6" class="dim">no events yet</td></tr>';return}
-  const rows=[...events.values()].sort((a,b)=>({E:0,W:1,I:2})[a.sev]-({E:0,W:1,I:2})[b.sev]||b.n-a.n);
-  tb.innerHTML=rows.map(e=>`<tr class="${e.sev}">
-    <td class="dim">${(e.first/1000).toFixed(1)}s</td>
-    <td class="dim">${(e.last/1000).toFixed(1)}s</td>
+  if(!events.size){tb.innerHTML='<tr><td colspan="6" class="d">no events yet</td></tr>';return}
+  const r=[...events.values()].sort((a,b)=>
+    ({E:0,W:1,I:2})[a.sev]-({E:0,W:1,I:2})[b.sev]||b.n-a.n);
+  tb.innerHTML=r.map(e=>`<tr class="${e.sev}">
+    <td class="d">${(e.first/1000).toFixed(1)}s</td><td class="d">${(e.last/1000).toFixed(1)}s</td>
     <td class="n">${e.name}</td><td>${e.n}</td><td>${e.val}</td>
-    <td class="note">${NOTE[e.name]?NOTE[e.name](e.val):''}</td></tr>`).join('');
+    <td class="x">${NOTE[e.name]?NOTE[e.name](e.val):''}</td></tr>`).join('');
 }
 
-/* ══════════════════════════════════════════════════════════════ readouts */
+/* ═════════════════════════════════════════════════════════════ readouts */
 const nf=(v,d=1)=>v==null||!isFinite(v)?'—':v.toFixed(d);
-const vf=(v,d)=>v?v.map(a=>a.toFixed(d)).join('  '):'—';
+const vf=(v,d)=>v?v.map(a=>a.toFixed(d)).join(' '):'—';
 let chipsBuilt=false;
-
 function readouts(){
   const now=performance.now(),dt=(now-S.tMark)/1000;
   if(dt>=1){S.rate=(S.rows-S.rowsMark)/dt;S.ovrRate=(S.ovr-S.ovrMark)/dt;
@@ -945,47 +847,27 @@ function readouts(){
 
   $('#vTilt').textContent=nf(S.tilt);$('#vRoll').textContent=nf(S.roll);
   $('#vAlt').textContent=nf(S.alt,1);$('#vVv').textContent=nf(S.vv,1);
-  $('#vAzi').textContent=nf(S.azi,0);$('#vAup').textContent=nf(S.aup,2);
   $('#vApo').textContent=isFinite(S.apogee)?S.apogee.toFixed(1):'—';
-  $('#vMaxV').textContent=isFinite(S.maxUp)?S.maxUp.toFixed(1):'—';
+  $('#vFix').textContent=S.fix?`${S.fix} / ${S.nsat}`:'—';
+  $('#vLat').textContent=S.lat?S.lat.toFixed(6):'—';
+  $('#vLon').textContent=S.lon?S.lon.toFixed(6):'—';
 
-  $('#bRaw').hidden=!S.accel;
-  if(S.accel){$('#vAcc').textContent=vf(S.accel,3);
-    $('#vAmag').textContent=Math.hypot(...S.accel).toFixed(3);
-    $('#vGyr').textContent=vf(S.gyro,1);$('#vTemp').textContent=nf(S.temp)}
-  $('#bMag').hidden=!S.mag;
-  if(S.mag){$('#vMg').textContent=vf(S.mag,1);
-    $('#vBm').textContent=Math.hypot(...S.mag).toFixed(1)}
-
+  if(pad&&S.lat){
+    const n=(S.lat-pad.lat)*111320,
+          e=(S.lon-pad.lon)*111320*Math.cos(pad.lat*D2R);
+    let b=Math.atan2(e,n)/D2R;if(b<0)b+=360;
+    $('#vRange').textContent=Math.hypot(n,e).toFixed(0);
+    $('#vBrg').textContent=b.toFixed(0);
+    $('#mapTag').textContent=`${S.nsat} sats · ${Math.hypot(n,e).toFixed(0)} m from pad · z${mapZ}`;
+  }else{
+    $('#vRange').textContent='—';$('#vBrg').textContent='—';
+    $('#mapTag').textContent=(S.fix>=3?'fix, no pad reference':'no 3D fix')+` · z${mapZ}`;
+  }
   $('#srcTag').textContent={none:'awaiting telemetry',
     flight:'orientation · filter quaternion',
     accel:'orientation · gravity only, roll unobservable',
     demo:'orientation · DEMO, synthetic flight'}[S.src];
-  $('#srcTag').className='tag'+(S.src==='demo'?' warn':'');
-
-  if(!chipsBuilt){
-    for(const id of['#chips','#chips2'])
-      $(id).innerHTML=FAULTS.map(([,n])=>`<span class="chip">${n}</span>`).join('');
-    chipsBuilt=true;
-  }
-  for(const id of['#chips','#chips2'])
-    FAULTS.forEach(([b,,s],i)=>{
-      $(id).children[i].className='chip'+((S.faults&b)?' '+s:'')});
-
-  $('#vLat').textContent=S.lat?S.lat.toFixed(6):'—';
-  $('#vLon').textContent=S.lon?S.lon.toFixed(6):'—';
-  $('#vFix').textContent=['none','dead-reckon','2D','3D','GNSS+DR','time'][S.fix]||S.fix;
-  $('#vSat').textContent=S.nsat;
-  $('#vPLat').textContent=pad?pad.lat.toFixed(6):'—';
-  $('#vPLon').textContent=pad?pad.lon.toFixed(6):'—';
-  $('#vPts').textContent=track.length;
-  if(track.length){
-    const p=track[track.length-1],r=Math.hypot(p[0],p[1]);
-    let b=Math.atan2(p[0],p[1])*180/Math.PI;if(b<0)b+=360;
-    $('#vRange').textContent=r.toFixed(0);$('#vBrg').textContent=b.toFixed(0);
-    $('#mapTag').textContent=`${track.length} points · ${r.toFixed(0)} m from pad`;
-  }else $('#mapTag').textContent=S.fix>=3?'fix, waiting for pad reference':'no 3D fix';
-  $('#mapLink').href=S.lat?`https://www.openstreetmap.org/?mlat=${S.lat}&mlon=${S.lon}#map=17/${S.lat}/${S.lon}`:'#';
+  $('#srcTag').className='tag'+(S.src==='demo'?' w':'');
 
   $('#kAlt').textContent=nf(S.alt,2);$('#kVv').textContent=nf(S.vv,2);
   $('#kAup').textContent=nf(S.aup,2);
@@ -1000,59 +882,66 @@ function readouts(){
   const n=noseOf(S.q);
   $('#nx').textContent=n[0].toFixed(4);$('#ny').textContent=n[1].toFixed(4);
   $('#nz').textContent=n[2].toFixed(4);
+  $('#vAcc').textContent=vf(S.accel,3);
+  $('#vAmag').textContent=S.accel?Math.hypot(...S.accel).toFixed(3):'—';
+  $('#vGyr').textContent=vf(S.gyro,1);$('#vTemp').textContent=nf(S.temp);
+  $('#vMg').textContent=vf(S.mag,1);
+  $('#vBm').textContent=S.mag?Math.hypot(...S.mag).toFixed(1):'—';
 
   $('#hRate').textContent=S.rate.toFixed(1);
   $('#hHz').textContent=(S.rate*8).toFixed(0);
   $('#hUs').textContent=S.loopUs;$('#hOvr').textContent=S.ovr;
   $('#hOvrR').textContent=S.ovrRate.toFixed(2);$('#hTmo').textContent=S.tmo;
+
+  if(!chipsBuilt){
+    $('#chips').innerHTML=FAULTS.map(([,n])=>`<span class="chip">${n}</span>`).join('');
+    chipsBuilt=true}
+  FAULTS.forEach(([b,,s],i)=>{
+    $('#chips').children[i].className='chip'+((S.faults&b)?' '+s:'')});
 }
 
-/* ═══════════════════════════════════════════════════════════════════ loop */
+/* ═════════════════════════════════════════════════════════════════ loop */
 let tab='flight';
 function frame(){
   if(demo)tickDemo();
   readouts();
-  if(tab==='flight'){drawGL();drawAI();drawAlt();drawVs()}
-  else if(tab==='nav')drawMap();
-  else if(tab==='kalman'){
-    chart($('#cAlt'),[{d:H.alt,c:'#4cc2ff'}],{min:5});
-    chart($('#cVv'),[{d:H.vv,c:'#4cc98a'}],{min:2});
-    chart($('#cAup'),[{d:H.aup,c:'#e0a63c'}],{min:2});
+  if(tab==='flight'){
+    if(follow&&S.lat)mapCentre=null;
+    drawGL();drawAI();drawAlt();drawVs();drawMap();
+  }else if(tab==='kalman'){
+    chart($('#cAlt'),[{d:H.alt,c:'#5ac8fa'}],{min:5});
+    chart($('#cVv'),[{d:H.vv,c:'#5ac8fa'}],{min:2});
+    chart($('#cAup'),[{d:H.aup,c:'#d99a2b'}],{min:2});
   }else if(tab==='att'){
-    chart($('#cTilt'),[{d:H.tilt,c:'#4cc2ff'}],{min:5});
-    chart($('#cRoll'),[{d:H.roll,c:'#4cc98a',wrap:180},{d:H.azi,c:'#b98ce0',wrap:180}],{min:20});
-    chart($('#cGyr'),[{d:H.gp,c:'#e5605e'},{d:H.gq,c:'#4cc98a'},{d:H.gr,c:'#4cc2ff'}],{min:10});
+    chart($('#cTilt'),[{d:H.tilt,c:'#5ac8fa'}],{min:5});
+    chart($('#cRoll'),[{d:H.roll,c:'#5ac8fa',wrap:180},{d:H.azi,c:'#9b8cd0',wrap:180}],{min:20});
+    chart($('#cGyr'),[{d:H.gp,c:'#e0574f'},{d:H.gq,c:'#7fbf7f'},{d:H.gr,c:'#5ac8fa'}],{min:10});
   }
   requestAnimationFrame(frame);
 }
 
-/* ══════════════════════════════════════════════════════════════════ serial */
+/* ═══════════════════════════════════════════════════════════════ serial */
 let port=null,reader=null,writer=null;
 async function connect(){
-  try{ port=await navigator.serial.requestPort();
-       await port.open({baudRate:+$('#baud').value}); }
-  catch(e){ if(e.name!=='NotFoundError')con('connect failed: '+e.message,'e'); port=null; return }
+  try{port=await navigator.serial.requestPort();
+      await port.open({baudRate:+$('#baud').value})}
+  catch(e){if(e.name!=='NotFoundError')con('connect failed: '+e.message,'e');port=null;return}
   demo=false;$('#bDemo').classList.remove('on');
-  $('#led').classList.add('up');$('#linktxt').textContent=$('#baud').value+' 8N1';
+  $('#led').classList.add('up');$('#ltxt').textContent=$('#baud').value+' 8N1';
   $('#bConnect').textContent='Disconnect';
   $('#bDump').disabled=$('#bHdr').disabled=false;
   con('— connected —','s');
   try{writer=port.writable.getWriter()}catch(e){writer=null}
-
   const dec=new TextDecoderStream();
   port.readable.pipeTo(dec.writable).catch(()=>{});
   reader=dec.readable.getReader();
   let b='';
-  try{
-    for(;;){
-      const{value,done}=await reader.read();
-      if(done)break;
-      b+=value;
-      const p=b.split('\n');b=p.pop();
-      for(const l of p)onLine(l);
-      if(b.length>8192)b='';
-    }
-  }catch(e){con('read error: '+e.message,'e')}
+  try{for(;;){
+    const{value,done}=await reader.read();if(done)break;
+    b+=value;const p=b.split('\n');b=p.pop();
+    for(const l of p)onLine(l);
+    if(b.length>8192)b='';
+  }}catch(e){con('read error: '+e.message,'e')}
   await disconnect();
 }
 async function disconnect(){
@@ -1060,33 +949,31 @@ async function disconnect(){
   try{if(writer)writer.releaseLock()}catch(e){}
   try{if(port)await port.close()}catch(e){}
   port=reader=writer=null;
-  $('#led').classList.remove('up');$('#linktxt').textContent='offline';
+  $('#led').classList.remove('up');$('#ltxt').textContent='offline';
   $('#bConnect').textContent='Connect';
   $('#bDump').disabled=$('#bHdr').disabled=true;
   con('— disconnected —','s');
 }
-const send=async ch=>{ if(writer) try{await writer.write(new TextEncoder().encode(ch))}
-                       catch(e){con('write failed: '+e.message,'e')} };
+const send=async c=>{if(writer)try{await writer.write(new TextEncoder().encode(c))}
+  catch(e){con('write failed: '+e.message,'e')}};
 
-/* ════════════════════════════════════════════════════════════════════ demo */
+/* ═════════════════════════════════════════════════════════════════ demo */
 let demo=false,D=null;
 function resetDemo(){D={t:0,alt:0,vv:0,tilt:2,roll:0,rr:0,azi:35,
-  lat:40.116400,lon:-88.243400,chute:false}}
+  lat:DEFAULT_CENTRE.lat,lon:DEFAULT_CENTRE.lon,chute:false}}
 function tickDemo(){
-  const dt=1/60;D.t+=dt;
-  let a;
-  if(D.t<1) a=0;
-  else if(D.t<3.4){a=76;D.rr+=dt*140;D.tilt+=dt*1.6}          // boost
-  else if(!D.chute){a=-9.81-0.0016*D.vv*Math.abs(D.vv);D.rr*=(1-dt*.5);D.tilt+=dt*7}
-  else {a=(-8-D.vv)*1.4;D.rr=28}                               // under canopy
+  const dt=1/60;D.t+=dt;let a;
+  if(D.t<1)a=0;
+  else if(D.t<3.4){a=76;D.rr+=dt*140;D.tilt+=dt*1.6}
+  else if(!D.chute){a=-9.81-.0016*D.vv*Math.abs(D.vv);D.rr*=(1-dt*.5);D.tilt+=dt*7}
+  else{a=(-8-D.vv)*1.4;D.rr=28}
   D.vv+=a*dt;D.alt=Math.max(0,D.alt+D.vv*dt);
-  if(!D.chute&&D.vv<0&&D.t>4){D.chute=true}
+  if(!D.chute&&D.vv<0&&D.t>4)D.chute=true;
   if(D.chute)D.tilt+=(148-D.tilt)*dt*.5;
-  if(D.alt<=0&&D.t>6){resetDemo();track=[];pad=null;return}  // fly the profile again
+  if(D.alt<=0&&D.t>6){resetDemo();track=[];pad=null;return}
   D.roll=((D.roll+D.rr*dt+180)%360)-180;
   D.azi=((D.azi+dt*4+180)%360)-180;
-  D.lat+=dt*2.3e-6;D.lon+=dt*5.1e-6;
-
+  D.lat+=dt*3.0e-6;D.lon+=dt*6.5e-6;
   S.tilt=D.tilt;S.roll=D.roll;S.azi=D.azi;S.alt=D.alt;S.vv=D.vv;S.aup=a;
   S.q=qFromAngles(S.tilt,S.roll,S.azi);
   S.accel=qRot([S.q[0],-S.q[1],-S.q[2],-S.q[3]],[0,0,(a+9.81)/9.81]);
@@ -1096,59 +983,50 @@ function tickDemo(){
   if(S.vv>S.maxUp)S.maxUp=S.vv;
   if(S.vv<S.maxDn)S.maxDn=S.vv;
   if(Math.abs(a)>Math.abs(S.maxA))S.maxA=a;
-  if(!pad)pad={lat:D.lat,lon:D.lon};
-  const n=(D.lat-pad.lat)*111320,e=(D.lon-pad.lon)*111320*Math.cos(pad.lat*Math.PI/180);
-  const l=track[track.length-1];
-  if(!l||Math.hypot(e-l[0],n-l[1])>.4)track.push([e,n]);
-  /* deliberately does not touch S.rows — loop health must only ever
-     reflect real serial traffic, never the browser frame rate */
+  pushFix();
+  /* deliberately does not touch S.rows — loop health must only ever reflect
+     real serial traffic, never the browser frame rate */
   hist((performance.now()-S.t0)/1000);
 }
 
-/* ═════════════════════════════════════════════════════════════════ wiring */
+/* ═══════════════════════════════════════════════════════════════ wiring */
 $$('nav button').forEach(b=>b.onclick=()=>{
   $$('nav button').forEach(o=>o.classList.toggle('sel',o===b));
   $$('.tab').forEach(s=>s.classList.toggle('sel',s.dataset.t===b.dataset.t));
-  tab=b.dataset.t;
-});
+  tab=b.dataset.t});
 $('#bConnect').onclick=()=>port?disconnect():connect();
 $('#bDump').onclick=()=>send('l');
 $('#bHdr').onclick=()=>send('h');
-$('#bDemo').onclick=e=>{
-  demo=!demo;e.target.classList.toggle('on',demo);
+$('#bDemo').onclick=e=>{demo=!demo;e.target.classList.toggle('on',demo);
   if(demo){resetDemo();con('— demo mode: synthetic flight —','s')}
-  else{S.src=port?'flight':'none';con('— demo off —','s')}
-};
-$('#bClr').onclick=()=>{$('#conout').innerHTML='';csv=[]};
+  else{S.src=port?'flight':'none';con('— demo off —','s')}};
+$('#bClr').onclick=()=>{$('#cout').innerHTML='';csv=[]};
 $('#bMin').onclick=e=>{const c=$('#con');c.classList.toggle('min');
   e.target.textContent=c.classList.contains('min')?'show':'hide'};
 $('#bTrack').onclick=()=>{track=[];pad=null};
-$('#bView').onclick=()=>cam={yaw:-.9,pitch:.30,dist:5.0};
+$('#bView').onclick=()=>cam={yaw:-.9,pitch:.3,dist:4.8};
 $('#bModel').onclick=()=>{setMesh(fitMesh(rocketMesh()),false);con('— model reset —','s')};
+$('#bZi').onclick=()=>mapZ=Math.min(19,mapZ+1);
+$('#bZo').onclick=()=>mapZ=Math.max(2,mapZ-1);
+$('#bFollow').onclick=e=>{follow=!follow;e.target.classList.toggle('on',follow);
+  if(follow)mapCentre=null};
 $('#bCsv').onclick=()=>{
   if(!csv.length){con('no flight rows captured','w');return}
-  const hdr='ms,tilt_deg,roll_deg,azi_deg,alt_m,vv_mps,aup_mps2,lat,lon,fix,nsat,loop_us,ovr,tmo,flt';
-  const u=URL.createObjectURL(new Blob([hdr+'\n'+csv.join('\n')],{type:'text/csv'}));
-  const a=document.createElement('a');a.href=u;a.download='kittyv1-'+Date.now()+'.csv';a.click();
-  URL.revokeObjectURL(u);
-};
+  const h='ms,tilt_deg,roll_deg,azi_deg,alt_m,vv_mps,aup_mps2,lat,lon,fix,nsat,loop_us,ovr,tmo,flt';
+  const u=URL.createObjectURL(new Blob([h+'\n'+csv.join('\n')],{type:'text/csv'}));
+  const a=document.createElement('a');a.href=u;a.download='kittyv1-'+Date.now()+'.csv';
+  a.click();URL.revokeObjectURL(u)};
 $('#stl').onchange=async e=>{
   const f=e.target.files[0];if(!f)return;
-  try{
-    const m=fitMesh(parseSTL(await f.arrayBuffer()));
-    setMesh(m,true);
-    con(`— loaded ${f.name}: ${m.n/3} triangles —`,'s');
-  }catch(err){con('STL parse failed: '+err.message,'e')}
-  e.target.value='';
-};
+  try{const m=fitMesh(parseSTL(await f.arrayBuffer()));setMesh(m,true);
+    con(`— loaded ${f.name}: ${m.n/3} triangles —`,'s')}
+  catch(err){con('STL parse failed: '+err.message,'e')}
+  e.target.value=''};
 
 if(!('serial' in navigator)){
   $('main').hidden=true;$('#con').hidden=true;$('#nosup').hidden=false;
   $('#bConnect').disabled=true;
-}else{
-  initGL();
-  requestAnimationFrame(frame);
-}
+}else{initGL();requestAnimationFrame(frame)}
 </script>
 </body>
 </html>
