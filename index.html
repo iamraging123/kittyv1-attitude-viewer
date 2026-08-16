@@ -7,10 +7,13 @@
 <style>
 :root{
   --bg:#000; --edge:#171717; --edge2:#282828;
-  --fg:#ececec; --fg2:#858585; --fg3:#4a4a4a;
+  /* One typeface and one text colour everywhere. --fg2/--fg3 and --sans are
+     kept as aliases so every existing rule resolves to the same values;
+     hierarchy is carried by size, spacing and borders, never by colour. */
+  --fg:#ececec; --fg2:var(--fg); --fg3:var(--fg);
   --live:#5ac8fa; --warn:#d99a2b; --bad:#e0574f;
-  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
   --mono:ui-monospace,"SF Mono","Cascadia Mono",Consolas,"Liberation Mono",monospace;
+  --sans:var(--mono);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
@@ -56,7 +59,6 @@ section.tab.sel{display:flex}
 .tl{top:9px;left:11px}.tr{top:9px;right:11px}.bl{bottom:9px;left:11px}
 .br{bottom:9px;right:11px}
 .tag{font:10.5px var(--mono);color:var(--fg3);letter-spacing:.02em}
-.tag.w{color:var(--warn)}
 /* over satellite imagery a bare dim grey is unreadable */
 .view .tag.over{color:rgba(255,255,255,.62);background:rgba(0,0,0,.55);
   padding:2px 6px;border-radius:2px}
@@ -85,7 +87,7 @@ label.file:hover{color:var(--fg);border-color:#3a3a3a}
 .qdl dd{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
 .ladder{display:flex;gap:3px;margin:11px 0 7px}
 .ladder i{flex:1 1 0;height:3px;background:#1e1e1e;font-style:normal;display:block}
-.ladder i.on{background:var(--live)}
+.ladder i.on{background:var(--fg)}
 #sigwrap{position:absolute;left:12px;right:12px;top:118px;bottom:26px}
 #sigwrap canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 #sigNote{position:absolute;left:12px;bottom:8px;margin:0}
@@ -114,7 +116,9 @@ label.file:hover{color:var(--fg);border-color:#3a3a3a}
   letter-spacing:.15em;color:var(--fg3);z-index:1}
 .chart .key{position:absolute;top:8px;right:13px;font:10px var(--mono);
   display:flex;gap:12px;z-index:1}
-.chart .key i{font-style:normal}
+.chart .key i{font-style:normal;display:inline-flex;align-items:center}
+/* the series colour lives on a swatch, not on the label text */
+.chart .key b{width:10px;height:2px;display:inline-block;margin-right:5px}
 aside{flex:0 0 232px;border-left:1px solid var(--edge);overflow-y:auto;padding:14px}
 h2{font-size:8.5px;letter-spacing:.15em;color:var(--fg3);font-weight:400;
   text-transform:uppercase;margin:0 0 8px}
@@ -128,13 +132,13 @@ table{width:100%;border-collapse:collapse;font:11.5px var(--mono)}
 th{text-align:left;font:400 8.5px var(--sans);letter-spacing:.15em;color:var(--fg3);
   padding:0 10px 7px 0;border-bottom:1px solid var(--edge)}
 td{padding:5px 10px 5px 0;border-bottom:1px solid #0e0e0e;vertical-align:top}
-tr.W td.n{color:var(--warn)}tr.E td.n{color:var(--bad)}tr.I td.n{color:var(--fg2)}
 td.d{color:var(--fg3)}td.x{color:var(--fg2);font:11.5px var(--sans)}
 .chips{display:flex;flex-wrap:wrap;gap:5px}
 .chip{font:10px var(--mono);padding:3px 8px;border:1px solid var(--edge);
   color:var(--fg3);border-radius:2px}
-.chip.w{border-color:#3d2f12;color:var(--warn)}
-.chip.e{border-color:#3d1f1c;color:var(--bad)}
+/* lit faults are marked by border and fill, not by text colour */
+.chip.w{border-color:#5d4a1c;background:#191510}
+.chip.e{border-color:#5d2f2b;background:#191010}
 
 /* ------------------------------------------------------------- console */
 #con{flex:0 0 auto;border-top:1px solid var(--edge);display:flex;
@@ -146,14 +150,12 @@ td.d{color:var(--fg3)}td.x{color:var(--fg2);font:11.5px var(--sans)}
 #cout{flex:1 1 auto;overflow-y:auto;padding:5px 12px 8px;font:11px/1.5 var(--mono);
   white-space:pre-wrap;word-break:break-all;color:var(--fg2)}
 #con.min #cout{display:none}
-#cout .m{color:var(--fg3)}#cout .w{color:var(--warn)}
-#cout .e{color:var(--bad)}#cout .s{color:var(--live)}
 ::-webkit-scrollbar{width:8px;height:8px}
 ::-webkit-scrollbar-thumb{background:#1e1e1e}
 ::-webkit-scrollbar-thumb:hover{background:#2c2c2c}
 ::-webkit-scrollbar-track{background:transparent}
 #nosup{padding:40px;max-width:540px;line-height:1.8;color:var(--fg2)}
-#nosup code{font-family:var(--mono);color:var(--live)}
+#nosup code{font-family:var(--mono)}
 a{color:var(--fg2);text-decoration:none}a:hover{color:var(--fg)}
 </style>
 </head>
@@ -282,12 +284,12 @@ a{color:var(--fg2);text-decoration:none}a:hover{color:var(--fg)}
     <div class="row grow">
       <div class="col grow">
         <div class="chart grow"><canvas id="cAlt"></canvas>
-          <div class="ttl">ALTITUDE AGL m</div><div class="key"><i style="color:#5ac8fa">KF</i></div></div>
+          <div class="ttl">ALTITUDE AGL m</div><div class="key"><i><b style="background:#5ac8fa"></b>KF</i></div></div>
         <div class="chart grow"><canvas id="cVv"></canvas>
-          <div class="ttl">VERTICAL VELOCITY m/s</div><div class="key"><i style="color:#5ac8fa">KF</i></div></div>
+          <div class="ttl">VERTICAL VELOCITY m/s</div><div class="key"><i><b style="background:#5ac8fa"></b>KF</i></div></div>
         <div class="chart grow"><canvas id="cAup"></canvas>
           <div class="ttl">WORLD-UP ACCELERATION m/s² · gravity removed</div>
-          <div class="key"><i style="color:#d99a2b">a·up</i></div></div>
+          <div class="key"><i><b style="background:#d99a2b"></b>a·up</i></div></div>
       </div>
       <aside>
         <div class="blk"><h2>Filter state</h2><dl>
@@ -314,13 +316,13 @@ a{color:var(--fg2);text-decoration:none}a:hover{color:var(--fg)}
     <div class="row grow">
       <div class="col grow">
         <div class="chart grow"><canvas id="cTilt"></canvas>
-          <div class="ttl">TILT FROM VERTICAL deg</div><div class="key"><i style="color:#5ac8fa">tilt</i></div></div>
+          <div class="ttl">TILT FROM VERTICAL deg</div><div class="key"><i><b style="background:#5ac8fa"></b>tilt</i></div></div>
         <div class="chart grow"><canvas id="cRoll"></canvas>
           <div class="ttl">ROLL ABOUT NOSE / AZIMUTH deg</div>
-          <div class="key"><i style="color:#5ac8fa">roll</i><i style="color:#9b8cd0">azi</i></div></div>
+          <div class="key"><i><b style="background:#5ac8fa"></b>roll</i><i><b style="background:#9b8cd0"></b>azi</i></div></div>
         <div class="chart grow"><canvas id="cGyr"></canvas>
           <div class="ttl">ANGULAR RATE · body deg/s</div>
-          <div class="key"><i style="color:#e0574f">p</i><i style="color:#7fbf7f">q</i><i style="color:#5ac8fa">r</i></div></div>
+          <div class="key"><i><b style="background:#e0574f"></b>p</i><i><b style="background:#7fbf7f"></b>q</i><i><b style="background:#5ac8fa"></b>r</i></div></div>
       </div>
       <aside>
         <div class="blk"><h2>Angles</h2><dl>
@@ -347,11 +349,11 @@ a{color:var(--fg2);text-decoration:none}a:hover{color:var(--fg)}
       <div class="col grow" style="overflow-y:auto;padding:14px">
         <h2>Event records</h2>
         <table><thead><tr>
-          <th style="width:66px">FIRST</th><th style="width:66px">LAST</th>
+          <th style="width:34px">SEV</th><th style="width:66px">FIRST</th><th style="width:66px">LAST</th>
           <th style="width:168px">EVENT</th><th style="width:56px">COUNT</th>
           <th style="width:86px">VALUE</th><th>INTERPRETATION</th>
         </tr></thead><tbody id="evb">
-          <tr><td colspan="6" class="d" style="padding-top:12px">no events yet</td></tr>
+          <tr><td colspan="7" style="padding-top:12px">no events yet</td></tr>
         </tbody></table>
       </div>
       <aside>
@@ -381,7 +383,7 @@ a{color:var(--fg2);text-decoration:none}a:hover{color:var(--fg)}
 </div>
 
 <div id="nosup" hidden>
-  <p><b style="color:var(--fg)">Web Serial is not available in this browser.</b></p>
+  <p><b>Web Serial is not available in this browser.</b></p>
   <p style="margin-top:10px">Use Chrome or Edge on desktop, served over
   <code>https://</code> or <code>localhost</code>. Firefox and Safari do not
   implement the API.</p>
@@ -625,7 +627,7 @@ function drawAI(){
   x.strokeStyle='#9aa0a6';x.lineWidth=1;
   x.beginPath();x.moveTo(-2*R,0);x.lineTo(2*R,0);x.stroke();
   x.strokeStyle='#454b51';x.font='8px ui-monospace,monospace';
-  x.fillStyle='#6b7178';x.textAlign='center';
+  x.fillStyle='#ececec';x.textAlign='center';
   for(let p=-80;p<=80;p+=10){if(!p)continue;
     const y=-p*PPD,ln=(p%20===0)?R*.40:R*.20;
     x.beginPath();x.moveTo(-ln,y);x.lineTo(ln,y);x.stroke();
@@ -660,7 +662,7 @@ function dial(cv,val,cfg){
     const r0=R-(maj?9:5);
     x.beginPath();x.moveTo(cx+Math.cos(a)*r0,cy+Math.sin(a)*r0);
     x.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R);x.stroke();
-    if(maj){x.fillStyle='#6f6f6f';
+    if(maj){x.fillStyle='#ececec';
       x.fillText(t.label,cx+Math.cos(a)*(R-19),cy+Math.sin(a)*(R-19))}}
   const a=cfg.ang(val)-Math.PI/2;
   x.strokeStyle=cfg.color;x.lineWidth=1.8;x.lineCap='round';
@@ -737,7 +739,7 @@ function drawMap(){
     }
   }
   if(!drew){
-    x.fillStyle='#3a3a3a';x.font='11px ui-monospace,monospace';x.textAlign='center';
+    x.fillStyle='#ececec';x.font='11px ui-monospace,monospace';x.textAlign='center';
     x.fillText(tileErrors?'imagery unavailable — offline':'loading imagery…',w/2,h/2);
   }
 
@@ -767,7 +769,7 @@ function drawMap(){
   const px=target/mpp;
   x.beginPath();x.moveTo(12,h-26);x.lineTo(12+px,h-26);
   x.moveTo(12,h-30);x.lineTo(12,h-22);x.moveTo(12+px,h-30);x.lineTo(12+px,h-22);x.stroke();
-  x.fillStyle='rgba(255,255,255,.6)';x.font='9.5px ui-monospace,monospace';
+  x.fillStyle='#ececec';x.font='9.5px ui-monospace,monospace';
   x.textAlign='left';
   x.fillText(target>=1000?(target/1000)+' km':target+' m',12,h-32);
 }
@@ -804,7 +806,7 @@ function chart(cv,series,opt){
   const p=(hi-lo)*.10;lo-=p;hi+=p;
   const X=t=>L+(t-t0)/(t1-t0)*pw,Y=v=>T+ph-(v-lo)/(hi-lo)*ph;
   x.strokeStyle='#111';x.lineWidth=1;x.font='9px ui-monospace,monospace';
-  x.fillStyle='#4a4a4a';x.textAlign='right';x.textBaseline='middle';
+  x.fillStyle='#ececec';x.textAlign='right';x.textBaseline='middle';
   const gs=niceStep(hi-lo,4);
   for(let v=Math.ceil(lo/gs)*gs;v<=hi;v+=gs){
     const y=Math.round(Y(v))+.5;
@@ -840,7 +842,7 @@ function drawSignal(){
   const f=fit($('#sig'));if(!f)return;const{x,w,h}=f;
   const n=H.t.length;
   x.strokeStyle='#161616';x.lineWidth=1;
-  x.font='8.5px ui-monospace,monospace';x.fillStyle='#3f3f3f';
+  x.font='8.5px ui-monospace,monospace';x.fillStyle='#ececec';
   x.textAlign='left';x.textBaseline='middle';
   let mx=8;for(let i=0;i<n;i++)if(H.sat[i]>mx)mx=H.sat[i];
   mx=Math.ceil(mx/4)*4;
@@ -937,11 +939,12 @@ function onLine(raw){
 }
 function renderEvents(){
   const tb=$('#evb');
-  if(!events.size){tb.innerHTML='<tr><td colspan="6" class="d">no events yet</td></tr>';return}
+  if(!events.size){tb.innerHTML='<tr><td colspan="7">no events yet</td></tr>';return}
   const r=[...events.values()].sort((a,b)=>
     ({E:0,W:1,I:2})[a.sev]-({E:0,W:1,I:2})[b.sev]||b.n-a.n);
   tb.innerHTML=r.map(e=>`<tr class="${e.sev}">
-    <td class="d">${(e.first/1000).toFixed(1)}s</td><td class="d">${(e.last/1000).toFixed(1)}s</td>
+    <td>${e.sev}</td>
+    <td>${(e.first/1000).toFixed(1)}s</td><td>${(e.last/1000).toFixed(1)}s</td>
     <td class="n">${e.name}</td><td>${e.n}</td><td>${e.val}</td>
     <td class="x">${NOTE[e.name]?NOTE[e.name](e.val):''}</td></tr>`).join('');
 }
