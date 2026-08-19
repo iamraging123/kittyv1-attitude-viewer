@@ -107,8 +107,15 @@ label.file:hover{color:var(--fg);border-color:#3a3a3a}
 
 /* --------------------------------------------------------------- strip */
 #strip{flex:0 0 auto;display:flex;border-top:1px solid var(--edge)}
-#strip div{flex:1 1 0;padding:8px 12px;border-right:1px solid var(--edge);min-width:0}
-#strip div:last-child{border-right:0}
+/* Three groups whose flex mirrors the row above (#leftcol | #gcol | #quad)
+   exactly, so the tilt/roll/azimuth readouts land under their own charts
+   instead of drifting across the window. Change one, change the other. */
+#strip>div{display:flex;min-width:0}
+#strip>#sgL{flex:1 1 0}
+#strip>#sgM{flex:0 0 196px}
+#strip>#sgR{flex:1 1 0}
+#strip>div>div{flex:1 1 0;padding:8px 12px;border-right:1px solid var(--edge);min-width:0}
+#strip>div:last-child>div:last-child{border-right:0}
 #strip span{display:block;font-size:8.5px;letter-spacing:.13em;color:var(--fg3);
   margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #strip b{font:400 17px/1 var(--mono);font-variant-numeric:tabular-nums;
@@ -293,14 +300,22 @@ a[aria-disabled]{opacity:.45;pointer-events:none}
     </div>
 
     <div id="strip">
-      <div><span>TILT deg</span><b id="vTilt">—</b></div>
-      <div><span>ROLL deg</span><b id="vRoll">—</b></div>
-      <div><span>ALT AGL m</span><b id="vAlt">—</b></div>
-      <div><span>V SPEED m/s</span><b id="vVv">—</b></div>
-      <div><span>AZIMUTH deg</span><b id="vAzi">—</b></div>
-      <div><span>APOGEE m</span><b id="vApo">—</b></div>
-      <div><span>MAX ASCENT m/s</span><b id="vMaxU">—</b></div>
-      <div><span>PEAK ACCEL m/s²</span><b id="vMaxA">—</b></div>
+      <!-- one box per chart above, in the same order -->
+      <div id="sgL">
+        <div><span>TILT deg</span><b id="vTilt">—</b></div>
+        <div><span>ROLL deg</span><b id="vRoll">—</b></div>
+        <div><span>AZIMUTH deg</span><b id="vAzi">—</b></div>
+      </div>
+      <!-- under the gauge column, which carries the altimeter -->
+      <div id="sgM">
+        <div><span>ALT AGL m</span><b id="vAlt">—</b></div>
+      </div>
+      <div id="sgR">
+        <div><span>V SPEED m/s</span><b id="vVv">—</b></div>
+        <div><span>APOGEE m</span><b id="vApo">—</b></div>
+        <div><span>MAX ASCENT m/s</span><b id="vMaxU">—</b></div>
+        <div><span>PEAK ACCEL m/s²</span><b id="vMaxA">—</b></div>
+      </div>
     </div>
   </section>
 
