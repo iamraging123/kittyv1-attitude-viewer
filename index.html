@@ -70,6 +70,13 @@ label.file:hover{color:var(--fg);border-color:#3a3a3a}
 #view3d,#quad{flex:1 1 0;min-width:0;min-height:0}
 #gcol{flex:0 0 196px;display:flex;flex-direction:column}
 
+/* left region: 3D view on top, the three attitude trends in a row beneath.
+   .chart is built to stack vertically, so its divider is flipped here. */
+#leftcol{flex:1 1 0;min-width:0;min-height:0}
+#attrow{flex:0 0 150px;display:flex;border-top:1px solid var(--edge)}
+#attrow .chart{flex:1 1 0;border-bottom:0;border-right:1px solid var(--edge)}
+#attrow .chart:last-child{border-right:0}
+
 /* right region: map is one quarter, three data panels fill the rest */
 #quad{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr}
 .q{position:relative;min-width:0;min-height:0;overflow:hidden;
@@ -156,6 +163,8 @@ td.d{color:var(--fg3)}td.x{color:var(--fg2);font:11.5px var(--sans)}
 #nosup{padding:40px;max-width:540px;line-height:1.8;color:var(--fg2)}
 #nosup code{font-family:var(--mono)}
 a{color:var(--fg2);text-decoration:none}a:hover{color:var(--fg)}
+a[href]{cursor:pointer}a[href]:hover{text-decoration:underline}
+a[aria-disabled]{opacity:.45;pointer-events:none}
 </style>
 </head>
 <body>
@@ -183,19 +192,36 @@ a{color:var(--fg2);text-decoration:none}a:hover{color:var(--fg)}
   <section class="tab sel" data-t="flight">
     <div class="row grow">
 
-      <div class="view" id="view3d">
-        <canvas id="gl"></canvas>
-        <div class="ovl tl"><span class="tag" id="srcTag">awaiting telemetry</span></div>
-        <div class="ovl tr">
-          <label class="file">STL<input type="file" id="stl" accept=".stl" hidden></label>
-          <select id="noseAxis" title="which model axis points out the nose">
-            <option value="0">nose +X</option><option value="1">nose −X</option>
-            <option value="2">nose +Y</option><option value="3">nose −Y</option>
-            <option value="4" selected>nose +Z</option><option value="5">nose −Z</option>
-          </select>
-          <button id="bModel">model</button><button id="bView">view</button>
+      <div id="leftcol" class="col">
+        <div class="view" id="view3d">
+          <canvas id="gl"></canvas>
+          <div class="ovl tl"><span class="tag" id="srcTag">awaiting telemetry</span></div>
+          <div class="ovl tr">
+            <label class="file">STL<input type="file" id="stl" accept=".stl" hidden></label>
+            <select id="shade" title="how the model is shaded">
+              <option value="0" selected>shaded</option>
+              <option value="1">normals</option>
+              <option value="2">clay</option>
+              <option value="3">nose axis</option>
+            </select>
+            <select id="noseAxis" title="which model axis points out the nose">
+              <option value="0">nose +X</option><option value="1">nose −X</option>
+              <option value="2">nose +Y</option><option value="3">nose −Y</option>
+              <option value="4" selected>nose +Z</option><option value="5">nose −Z</option>
+            </select>
+            <button id="bModel">model</button><button id="bView">view</button>
+          </div>
+          <div class="ovl bl"><span class="tag">drag orbit · scroll zoom · body +X = nose</span></div>
         </div>
-        <div class="ovl bl"><span class="tag">drag orbit · scroll zoom · body +X = nose</span></div>
+
+        <div id="attrow">
+          <div class="chart"><canvas id="cfTilt"></canvas>
+            <div class="ttl">TILT FROM VERTICAL deg</div></div>
+          <div class="chart"><canvas id="cfRoll"></canvas>
+            <div class="ttl">ROLL ABOUT NOSE deg</div></div>
+          <div class="chart"><canvas id="cfAzi"></canvas>
+            <div class="ttl">AZIMUTH deg TRUE</div></div>
+        </div>
       </div>
 
       <div id="gcol" class="vsep">
@@ -246,7 +272,7 @@ a{color:var(--fg2);text-decoration:none}a:hover{color:var(--fg)}
               <dt>track points</dt><dd id="vPts">0</dd>
             </dl>
             <p style="margin-top:11px"><a id="mapLink" target="_blank" rel="noopener"
-               style="font-size:11px">open in maps →</a></p>
+               aria-disabled="true" style="font-size:11px">no position yet</a></p>
           </div>
         </div>
 
@@ -314,11 +340,7 @@ a{color:var(--fg2);text-decoration:none}a:hover{color:var(--fg)}
   <section class="tab" data-t="att">
     <div class="row grow">
       <div class="col grow">
-        <div class="chart grow"><canvas id="cTilt"></canvas>
-          <div class="ttl">TILT FROM VERTICAL deg</div><div class="key"><i><b style="background:#5ac8fa"></b>tilt</i></div></div>
-        <div class="chart grow"><canvas id="cRoll"></canvas>
-          <div class="ttl">ROLL ABOUT NOSE / AZIMUTH deg</div>
-          <div class="key"><i><b style="background:#5ac8fa"></b>roll</i><i><b style="background:#9b8cd0"></b>azi</i></div></div>
+        <!-- tilt / roll / azimuth now live under the 3D view on FLIGHT -->
         <div class="chart grow"><canvas id="cGyr"></canvas>
           <div class="ttl">ANGULAR RATE · body deg/s</div>
           <div class="key"><i><b style="background:#e0574f"></b>p</i><i><b style="background:#7fbf7f"></b>q</i><i><b style="background:#5ac8fa"></b>r</i></div></div>
@@ -526,17 +548,28 @@ function alignMat(i){
 /* ═════════════════════════════════════════════════════════════════ WebGL */
 const glc=$('#gl'),gl=glc.getContext('webgl',{antialias:true,alpha:false});
 let prog,buf,mesh,meshSTL=false,lineBuf,lineN,cam={yaw:-.9,pitch:.3,dist:4.8};
+/* vA is the model's own position after centring/scaling and the nose-axis
+   alignment, but BEFORE the attitude rotation — so vA.x runs tail(-1) to
+   nose(+1) whichever way the vehicle is pointing. Only the axis ramp uses it. */
 const VS=`attribute vec3 aP;attribute vec3 aN;attribute vec3 aC;
-uniform mat4 uMVP,uMV;uniform mat3 uNM;varying vec3 vN,vP,vC;
-void main(){vN=uNM*aN;vP=(uMV*vec4(aP,1.)).xyz;vC=aC;gl_Position=uMVP*vec4(aP,1.);}`;
-const FS=`precision mediump float;varying vec3 vN,vP,vC;uniform float uFlat;
+uniform mat4 uMVP,uMV,uAxisM;uniform mat3 uNM;varying vec3 vN,vP,vC,vA;
+void main(){vN=uNM*aN;vP=(uMV*vec4(aP,1.)).xyz;vC=aC;
+  vA=(uAxisM*vec4(aP,1.)).xyz;gl_Position=uMVP*vec4(aP,1.);}`;
+const FS=`precision mediump float;varying vec3 vN,vP,vC,vA;uniform float uFlat,uMode;
 void main(){
   if(uFlat>.5){gl_FragColor=vec4(vC,1.);return;}
   vec3 n=normalize(vN);if(!gl_FrontFacing)n=-n;
+  /* 1 = normals: raw direction as colour, deliberately unlit — lighting would
+     hide the very facets this mode exists to show. */
+  if(uMode>.5&&uMode<1.5){gl_FragColor=vec4(n*.5+.5,1.);return;}
+  vec3 base=vC;
+  if(uMode>1.5&&uMode<2.5)base=vec3(.63,.64,.66);          /* 2 = clay */
+  if(uMode>2.5)base=mix(vec3(.16,.30,.46),vec3(.88,.56,.24),
+                        clamp(vA.x*.5+.5,0.,1.));          /* 3 = tail->nose */
   float k=max(dot(n,normalize(vec3(.35,.55,.75))),0.)*.85
         +max(dot(n,normalize(vec3(-.5,-.3,.2))),0.)*.15;
   float rim=pow(1.-max(dot(n,normalize(-vP)),0.),3.)*.30;
-  gl_FragColor=vec4(vC*(.14+k)+vec3(.24,.34,.44)*rim,1.);}`;
+  gl_FragColor=vec4(base*(.14+k)+vec3(.24,.34,.44)*rim,1.);}`;
 function sh(t,s){const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);
   if(!gl.getShaderParameter(o,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(o));
   return o}
@@ -578,15 +611,22 @@ function drawGL(){
     cam.dist*cp*Math.sin(cam.yaw),cam.dist*Math.sin(cam.pitch)];
   const V=M.look(eye,[0,0,.1],[0,0,1]),VP=M.mul(M.persp(.72,w/h,.1,60),V);
   const uMVP=gl.getUniformLocation(prog,'uMVP'),uMV=gl.getUniformLocation(prog,'uMV'),
-    uNM=gl.getUniformLocation(prog,'uNM'),uF=gl.getUniformLocation(prog,'uFlat');
+    uNM=gl.getUniformLocation(prog,'uNM'),uF=gl.getUniformLocation(prog,'uFlat'),
+    uMode=gl.getUniformLocation(prog,'uMode'),uAxis=gl.getUniformLocation(prog,'uAxisM');
   gl.bindBuffer(gl.ARRAY_BUFFER,lineBuf);attrs();
-  gl.uniform1f(uF,1);gl.uniformMatrix4fv(uMVP,false,VP);
+  /* Grid returns early on uFlat, but the vertex stage still evaluates uAxisM,
+     so it needs a real matrix rather than whatever was left bound. */
+  gl.uniform1f(uF,1);gl.uniform1f(uMode,0);gl.uniformMatrix4fv(uAxis,false,M.scale(1));
+  gl.uniformMatrix4fv(uMVP,false,VP);
   gl.uniformMatrix4fv(uMV,false,V);gl.uniformMatrix3fv(uNM,false,M.m3(V));
   gl.drawArrays(gl.LINES,0,lineN);
   const Rq=M.quat(S.q),A=alignMat(meshSTL?+$('#noseAxis').value:0);
-  const model=M.mul(M.mul(Rq,A),M.mul(M.scale(mesh.scale),M.trans(mesh.centre.map(v=>-v))));
+  const norm=M.mul(M.scale(mesh.scale),M.trans(mesh.centre.map(v=>-v)));
+  const model=M.mul(M.mul(Rq,A),norm);
   gl.bindBuffer(gl.ARRAY_BUFFER,buf);attrs();
-  gl.uniform1f(uF,0);gl.uniformMatrix4fv(uMVP,false,M.mul(VP,model));
+  gl.uniform1f(uF,0);gl.uniform1f(uMode,+$('#shade').value);
+  gl.uniformMatrix4fv(uAxis,false,M.mul(A,norm));
+  gl.uniformMatrix4fv(uMVP,false,M.mul(VP,model));
   gl.uniformMatrix4fv(uMV,false,M.mul(V,model));
   gl.uniformMatrix3fv(uNM,false,M.m3(M.mul(Rq,A)));
   gl.drawArrays(gl.TRIANGLES,0,mesh.n);
@@ -616,21 +656,34 @@ function niceStep(r,t){const raw=r/t,e=Math.pow(10,Math.floor(Math.log10(raw))),
 function drawAI(){
   const f=fit($('#gAi'));if(!f)return;const{x,w,h}=f;
   const cx=w/2,cy=h/2,R=Math.min(w,h)/2-16;
-  /* Rocket telemetry is tilt-from-vertical; a cockpit AI wants elevation
-     above the horizon. They are complements. Bank is roll about the nose. */
-  const pitch=Math.max(-90,Math.min(90,90-S.tilt)),bank=S.roll,PPD=R/46;
+  /* This ladder is zeroed on the ZENITH, not the horizon. Telemetry is
+     tilt-from-vertical and the vehicle lives near 0°, so a cockpit AI would
+     sit pegged at full sky exactly when the reading matters most. Nose
+     straight up puts the divider across the middle of the dial; tipping over
+     brings brown up over it, and a fully brown dial is >=46° off vertical.
+     Bank is roll about the nose. */
+  const tilt=Math.max(0,Math.min(180,S.tilt||0)),bank=S.roll,PPD=R/46;
   x.save();x.beginPath();x.arc(cx,cy,R,0,7);x.clip();
-  x.translate(cx,cy);x.rotate(-bank*D2R);x.translate(0,pitch*PPD);
-  x.fillStyle='#12202c';x.fillRect(-2*R,-4*R,4*R,4*R);
-  x.fillStyle='#2a2118';x.fillRect(-2*R,0,4*R,4*R);
+  x.translate(cx,cy);x.rotate(-bank*D2R);x.translate(0,-tilt*PPD);
+  /* Deep enough to still cover the dial at tilt 180, where the zenith line has
+     scrolled 180/46 = 3.9 R off the top. The old 4 R left a bare wedge at the
+     bottom of the dial once tilt passed ~90°. */
+  x.fillStyle='#12202c';x.fillRect(-2*R,-12*R,4*R,12*R);
+  x.fillStyle='#2a2118';x.fillRect(-2*R,0,4*R,12*R);
   x.strokeStyle='#9aa0a6';x.lineWidth=1;
   x.beginPath();x.moveTo(-2*R,0);x.lineTo(2*R,0);x.stroke();
   x.strokeStyle='#454b51';x.font='8px ui-monospace,monospace';
   x.fillStyle='#ececec';x.textAlign='center';
-  for(let p=-80;p<=80;p+=10){if(!p)continue;
-    const y=-p*PPD,ln=(p%20===0)?R*.40:R*.20;
+  /* Marks run below the zenith only — tilt is never negative, so marks above
+     it would be unreachable angles wearing the same labels as real ones.
+     The full 0..180 is laid down and the ladder scrolls past the dial as the
+     vehicle tips: at R/46 only ~46° is in view at once, which is what keeps
+     the near-vertical reading precise. 180 = nose straight down. */
+  x.fillText('0',R*.40+10,3);
+  for(let p=10;p<=180;p+=10){
+    const y=p*PPD,ln=(p%20===0)?R*.40:R*.20;
     x.beginPath();x.moveTo(-ln,y);x.lineTo(ln,y);x.stroke();
-    if(p%20===0)x.fillText(Math.abs(p),ln+10,y+3)}
+    if(p%20===0)x.fillText(p,ln+10,y+3)}
   x.restore();
   x.strokeStyle='#3a3a3a';x.lineWidth=1;
   for(const a of[-60,-45,-30,-20,-10,0,10,20,30,45,60]){
@@ -978,8 +1031,21 @@ function readouts(){
   $('#vPLat').textContent=pad?pad.lat.toFixed(6):'—';
   $('#vPLon').textContent=pad?pad.lon.toFixed(6):'—';
   $('#vPts').textContent=track.length;
-  $('#mapLink').href=S.lat
-    ?`https://www.openstreetmap.org/?mlat=${S.lat}&mlon=${S.lon}#map=17/${S.lat}/${S.lon}`:'#';
+  /* Live fix first, then the last point logged, then the pad. After a flight
+     the board is usually off or out of range and S.lat has fallen back to 0 —
+     which is exactly when you want to walk to the landing site. With no
+     position at all the href is REMOVED rather than set to '#': '#' plus
+     target=_blank merely opens a second copy of this page, which is what
+     made the link look broken. */
+  const mfix=(S.fix>=2&&(S.lat||S.lon))?{p:{lat:S.lat,lon:S.lon},w:'current fix'}
+    :track.length?{p:track[track.length-1],w:'last fix'}
+    :pad?{p:pad,w:'pad'}:null;
+  const ml=$('#mapLink'),mtxt=mfix?`open ${mfix.w} in maps →`:'no position yet';
+  if(mfix){ml.href='https://www.google.com/maps/search/?api=1&query='
+      +mfix.p.lat.toFixed(6)+','+mfix.p.lon.toFixed(6);
+    ml.removeAttribute('aria-disabled')}
+  else{ml.removeAttribute('href');ml.setAttribute('aria-disabled','true')}
+  if(ml.textContent!==mtxt)ml.textContent=mtxt;
 
   /* ---- STARTUP CALIBRATION ---- */
   $('#vBx').textContent=S.bias?S.bias[0].toFixed(4):'—';
@@ -1054,13 +1120,15 @@ function frame(){
   if(tab==='flight'){
     if(follow&&S.lat)mapCentre=null;
     drawGL();drawAI();drawAlt();drawVs();drawMap();drawSignal();
+    /* Roll and azimuth wrap at ±180; tilt is 0..180 and never does. */
+    chart($('#cfTilt'),[{d:H.tilt,c:'#5ac8fa'}],{min:5});
+    chart($('#cfRoll'),[{d:H.roll,c:'#5ac8fa',wrap:180}],{min:20});
+    chart($('#cfAzi'),[{d:H.azi,c:'#9b8cd0',wrap:180}],{min:20});
   }else if(tab==='kalman'){
     chart($('#cAlt'),[{d:H.alt,c:'#5ac8fa'}],{min:5});
     chart($('#cVv'),[{d:H.vv,c:'#5ac8fa'}],{min:2});
     chart($('#cAup'),[{d:H.aup,c:'#d99a2b'}],{min:2});
   }else if(tab==='att'){
-    chart($('#cTilt'),[{d:H.tilt,c:'#5ac8fa'}],{min:5});
-    chart($('#cRoll'),[{d:H.roll,c:'#5ac8fa',wrap:180},{d:H.azi,c:'#9b8cd0',wrap:180}],{min:20});
     chart($('#cGyr'),[{d:H.gp,c:'#e0574f'},{d:H.gq,c:'#7fbf7f'},{d:H.gr,c:'#5ac8fa'}],{min:10});
   }
   requestAnimationFrame(frame);
